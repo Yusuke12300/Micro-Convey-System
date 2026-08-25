@@ -256,6 +256,13 @@ class Path_Generation
    *              26	KOBUKI_DOCKED	ドック完了
    */
   RTC::InPort<RTC::TimedBooleanSeq> m_bumperIn;
+  RTC::TimedBoolean m_complete;
+  /*!
+   * 完了通知
+   * - Type: RTC::TimedBoolean
+   * - Semantics: True or False
+   */
+  RTC::InPort<RTC::TimedBoolean> m_completeIn;
   
   // </rtc-template>
 

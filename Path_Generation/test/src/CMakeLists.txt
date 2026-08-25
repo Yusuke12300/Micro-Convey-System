@@ -56,4 +56,4 @@ add_dependencies(${PROJECT_NAME}Test ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}Test ${OPENRTM_LIBRARIES} ${PROJECT_NAME})
 set_property(TARGET ${PROJECT_NAME}Test PROPERTY CXX_STANDARD 11)
 
-add_test(NAME ${PROJECT_NAME}_test COMMAND $<TARGET_FILE:${PROJECT_NAME}Test> -o "manager.components.precreate:${PROJECT_NAME}" -o "manager.components.preconnect:${PROJECT_NAME}0.bumper?port=${PROJECT_NAME}Test0.bumper,${PROJECT_NAME}0.targetVelocity?port=${PROJECT_NAME}Test0.targetVelocity" -o "manager.components.preactivation:${PROJECT_NAME}0,${PROJECT_NAME}Test0" WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_test(NAME ${PROJECT_NAME}_test COMMAND $<TARGET_FILE:${PROJECT_NAME}Test> -o "manager.components.precreate:${PROJECT_NAME}" -o "manager.components.preconnect:${PROJECT_NAME}0.bumper?port=${PROJECT_NAME}Test0.bumper,${PROJECT_NAME}0.complete?port=${PROJECT_NAME}Test0.complete,${PROJECT_NAME}0.targetVelocity?port=${PROJECT_NAME}Test0.targetVelocity" -o "manager.components.preactivation:${PROJECT_NAME}0,${PROJECT_NAME}Test0" WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

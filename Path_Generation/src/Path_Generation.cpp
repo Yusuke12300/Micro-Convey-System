@@ -40,6 +40,7 @@ Path_Generation::Path_Generation(RTC::Manager* manager)
     // <rtc-template block="initializer">
   : RTC::DataFlowComponentBase(manager),
     m_bumperIn("bumper", m_bumper),
+    m_completeIn("complete", m_complete),
     m_targetVelocityOut("targetVelocity", m_targetVelocity)
     // </rtc-template>
 {
@@ -60,6 +61,7 @@ RTC::ReturnCode_t Path_Generation::onInitialize()
   // <rtc-template block="registration">
   // Set InPort buffers
   addInPort("bumper", m_bumperIn);
+  addInPort("complete", m_completeIn);
   
   // Set OutPort buffer
   addOutPort("targetVelocity", m_targetVelocityOut);

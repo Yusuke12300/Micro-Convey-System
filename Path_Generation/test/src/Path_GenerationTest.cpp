@@ -40,6 +40,7 @@ Path_GenerationTest::Path_GenerationTest(RTC::Manager* manager)
     // <rtc-template block="initializer">
   : RTC::DataFlowComponentBase(manager),
     m_bumperOut("bumper", m_bumper),
+    m_completeOut("complete", m_complete),
     m_targetVelocityIn("targetVelocity", m_targetVelocity)
 
     // </rtc-template>
@@ -64,6 +65,7 @@ RTC::ReturnCode_t Path_GenerationTest::onInitialize()
   
   // Set OutPort buffer
   addOutPort("bumper", m_bumperOut);
+  addOutPort("complete", m_completeOut);
   
   // Set service provider to Ports
   
