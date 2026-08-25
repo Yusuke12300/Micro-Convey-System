@@ -79,12 +79,11 @@ RTC::ReturnCode_t Path_GenerationTest::onInitialize()
   return RTC::RTC_OK;
 }
 
-/*
+
 RTC::ReturnCode_t Path_GenerationTest::onFinalize()
 {
   return RTC::RTC_OK;
 }
-*/
 
 
 //RTC::ReturnCode_t Path_GenerationTest::onStartup(RTC::UniqueId /*ec_id*/)
@@ -99,22 +98,22 @@ RTC::ReturnCode_t Path_GenerationTest::onFinalize()
 //}
 
 
-//RTC::ReturnCode_t Path_GenerationTest::onActivated(RTC::UniqueId /*ec_id*/)
-//{
-//  return RTC::RTC_OK;
-//}
+RTC::ReturnCode_t Path_GenerationTest::onActivated(RTC::UniqueId /*ec_id*/)
+{
+  return RTC::RTC_OK;
+}
 
 
-//RTC::ReturnCode_t Path_GenerationTest::onDeactivated(RTC::UniqueId /*ec_id*/)
-//{
-//  return RTC::RTC_OK;
-//}
+RTC::ReturnCode_t Path_GenerationTest::onDeactivated(RTC::UniqueId /*ec_id*/)
+{
+  return RTC::RTC_OK;
+}
 
 
-//RTC::ReturnCode_t Path_GenerationTest::onExecute(RTC::UniqueId /*ec_id*/)
-//{
-//  return RTC::RTC_OK;
-//}
+RTC::ReturnCode_t Path_GenerationTest::onExecute(RTC::UniqueId /*ec_id*/)
+{
+  return RTC::RTC_OK;
+}
 
 
 //RTC::ReturnCode_t Path_GenerationTest::onAborting(RTC::UniqueId /*ec_id*/)

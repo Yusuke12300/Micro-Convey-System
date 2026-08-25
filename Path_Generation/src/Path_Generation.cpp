@@ -80,12 +80,11 @@ RTC::ReturnCode_t Path_Generation::onInitialize()
   return RTC::RTC_OK;
 }
 
-/*
+
 RTC::ReturnCode_t Path_Generation::onFinalize()
 {
   return RTC::RTC_OK;
 }
-*/
 
 
 //RTC::ReturnCode_t Path_Generation::onStartup(RTC::UniqueId /*ec_id*/)
@@ -100,22 +99,22 @@ RTC::ReturnCode_t Path_Generation::onFinalize()
 //}
 
 
-//RTC::ReturnCode_t Path_Generation::onActivated(RTC::UniqueId /*ec_id*/)
-//{
-//  return RTC::RTC_OK;
-//}
+RTC::ReturnCode_t Path_Generation::onActivated(RTC::UniqueId /*ec_id*/)
+{
+  return RTC::RTC_OK;
+}
 
 
-//RTC::ReturnCode_t Path_Generation::onDeactivated(RTC::UniqueId /*ec_id*/)
-//{
-//  return RTC::RTC_OK;
-//}
+RTC::ReturnCode_t Path_Generation::onDeactivated(RTC::UniqueId /*ec_id*/)
+{
+  return RTC::RTC_OK;
+}
 
 
-//RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
-//{
-//  return RTC::RTC_OK;
-//}
+RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
+{
+  return RTC::RTC_OK;
+}
 
 
 //RTC::ReturnCode_t Path_Generation::onAborting(RTC::UniqueId /*ec_id*/)

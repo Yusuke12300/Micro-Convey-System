@@ -77,7 +77,7 @@ class Path_GenerationTest
    * 
    * 
    */
-  // RTC::ReturnCode_t onFinalize() override;
+   RTC::ReturnCode_t onFinalize() override;
 
   /***
    *
@@ -113,7 +113,7 @@ class Path_GenerationTest
    * 
    * 
    */
-  // RTC::ReturnCode_t onActivated(RTC::UniqueId ec_id) override;
+   RTC::ReturnCode_t onActivated(RTC::UniqueId ec_id) override;
 
   /***
    *
@@ -125,7 +125,7 @@ class Path_GenerationTest
    * 
    * 
    */
-  // RTC::ReturnCode_t onDeactivated(RTC::UniqueId ec_id) override;
+   RTC::ReturnCode_t onDeactivated(RTC::UniqueId ec_id) override;
 
   /***
    *
@@ -137,7 +137,7 @@ class Path_GenerationTest
    * 
    * 
    */
-  // RTC::ReturnCode_t onExecute(RTC::UniqueId ec_id) override;
+   RTC::ReturnCode_t onExecute(RTC::UniqueId ec_id) override;
 
   /***
    *
