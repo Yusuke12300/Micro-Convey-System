@@ -1,0 +1,62 @@
+# Convert the detected camera coordinates with config/T_arm_camera.yaml and
+# publish Target_Coordinate_Out in the MyCobot base coordinate system.
+output_frame: arm
+
+# Depth-geometry detector settings. roi_xyxy [0, 0, 0, 0] means the full image.
+detector:
+  roi_xyxy: [0, 0, 0, 0]
+  plane_sample_stride: 3
+  plane_ransac_iterations: 120
+  plane_distance_threshold_m: 0.007
+  min_plane_inlier_ratio: 0.45
+  # The known target is 33 mm high. This band rejects shallow depth noise and
+  # taller MyCobot links while leaving margin for reflection-related holes.
+  object_min_height_m: 0.015
+  object_max_height_m: 0.070
+  min_component_area_px: 80
+  max_component_area_px: 2500
+  morphology_kernel_px: 3
+  dimension_abs_tolerance_mm: 6.0
+  dimension_relative_tolerance: 0.25
+  min_rectangularity: 0.65
+  # Five detections must form a position cluster within this radius. A moving
+  # robot link or a one-frame reflection is therefore not published.
+  stable_cluster_radius_m: 0.012
+  # Candidate boundaries must be supported by both color and depth edges.
+  color_canny_low_threshold: 40
+  color_canny_high_threshold: 120
+  depth_edge_threshold_m: 0.010
+  edge_search_radius_px: 2
+  min_color_edge_ratio: 0.08
+  min_depth_edge_ratio: 0.08
+  edge_confidence_weight: 0.20
+
+# dimensions_mm order is [width, length, height]. Matching is orientation-free.
+targets:
+  "[T1]":
+    enabled: true
+    dimensions_mm: [15.0, 45.0, 33.0]
+    description: rectangular cuboid
+    # The target top surface is expected around 550 mm from the camera. Hard
+    # rejection range is 470--630 mm; points nearer/farther are ignored.
+    camera_distance:
+      expected_m: 0.550
+      tolerance_m: 0.080
+      confidence_weight: 0.15
+    # OpenCV HSV range for a matte white surface. Hue is unrestricted;
+    # white is represented by low saturation and medium-to-high brightness.
+    color:
+      enabled: true
+      hsv_lower: [0, 0, 130]
+      hsv_upper: [179, 90, 255]
+      min_ratio: 0.45
+      confidence_weight: 0.35
+
+  "[T2]":
+    enabled: false
+
+  "[T3]":
+    enabled: false
+
+  "[T4]":
+    enabled: false

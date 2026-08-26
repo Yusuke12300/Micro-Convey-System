@@ -1,0 +1,27 @@
+2026-08-26 14:12:55,952 file.manager INFO 2.1.0
+2026-08-26 14:12:55,953 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-26 14:12:55,953 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-26 14:12:55,953 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-26 14:12:55,954 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-26 14:12:55,954 file.manager INFO   All right reserved.
+2026-08-26 14:12:55,954 file.manager INFO Manager starting.
+2026-08-26 14:12:55,955 file.manager INFO Starting local logging.
+2026-08-26 14:12:55,976 file.manager.namingmanager INFO NameServer connection succeeded: corba/localhost:2809
+2026-08-26 14:12:55,979 file.LocalServiceAdmin INFO All the local services are enabled.
+2026-08-26 14:12:56,531 file.manager INFO Component type conf file: Image_Recognition.conf loaded.
+2026-08-26 14:12:56,535 file.ec_base INFO setRate(1000000.000000) done
+2026-08-26 14:12:56,536 file.ec_base INFO setRate(10.000000) done
+2026-08-26 14:12:56,537 file.rtobject INFO 1 execution context was created.
+2026-08-26 14:12:56,543 file.rtobject INFO Initial active configuration set is default.
+2026-08-26 14:13:58,735 file.ec_base WARNING The component is not responding.
+2026-08-26 14:13:59,756 file.ec_base ERROR Unknown error: Invalid state transition.
+2026-08-26 14:14:13,842 file.ec_base ERROR The component is not responding.
+2026-08-26 14:14:13,842 file.ec_base ERROR Unknown error: Invalid state transition.
+2026-08-26 14:15:04,003 file.ec_base WARNING The component is not responding.
+2026-08-26 14:15:04,007 file.ec_base ERROR Unknown error: Invalid state transition.
+2026-08-26 14:20:48,744 file.ec_base ERROR The component is not responding.
+2026-08-26 14:20:48,745 file.ec_base ERROR Unknown error: Invalid state transition.
+2026-08-26 14:21:56,834 file.ec_base WARNING The component is not responding.
+2026-08-26 14:21:56,835 file.ec_base ERROR Unknown error: Invalid state transition.
+2026-08-26 14:26:42,076 file.ec_base ERROR The component is not responding.
+2026-08-26 14:26:42,076 file.ec_base ERROR Unknown error: Invalid state transition.

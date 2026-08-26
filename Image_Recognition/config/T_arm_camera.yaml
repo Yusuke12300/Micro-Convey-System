@@ -1,0 +1,19 @@
+# Transform from the RealSense depth optical frame to the MyCobot base frame.
+# Assumed mounting:
+#   camera origin in arm coordinates = (0.2, 0.0, 0.55) m
+#   camera +Y = arm +X
+#   camera +Z = arm -Z (the camera looks down at the work surface)
+#   camera +X = arm +Y (fixed by the right-handed coordinate system)
+# Therefore:
+#   x_arm = 0.2 + y_camera
+#   y_arm = x_camera
+#   z_arm = 0.55 - z_camera
+calibrated: true
+from_frame: camera_depth_optical
+to_frame: arm_base
+translation_unit: m
+T_arm_camera:
+  - [0.0, 1.0, 0.0, 0.2]
+  - [1.0, 0.0, 0.0, 0.0]
+  - [0.0, 0.0, -1.0, 0.55]
+  - [0.0, 0.0, 0.0, 1.0]

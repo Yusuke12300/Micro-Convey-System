@@ -190,7 +190,7 @@ class Select_Target(OpenRTM_aist.DataFlowComponentBase):
     # ===============================================
     # 【追加】UIのボタンが押されたときに呼ばれる関数
     # ===============================================
-def send_target(self, target_id):
+    def send_target(self, target_id):
         # 1つ目のポート (target_out1) に送信
         self._d_target_out1.data = target_id
         OpenRTM_aist.setTimestamp(self._d_target_out1)

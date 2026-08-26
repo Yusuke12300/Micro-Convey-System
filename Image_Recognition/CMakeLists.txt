@@ -86,7 +86,8 @@ set(EXEC_FILES ""
 )
 
 set(OTHER_SRCS CMakeLists.txt
-               RTC.xml Image_Recognition.conf rtc.conf)
+               RTC.xml Image_Recognition.conf rtc.conf
+               geometry_recognition.py requirements.txt)
 
 # check python installed
 find_package(Python 3)
@@ -110,6 +111,14 @@ endif()
 
 
 install(PROGRAMS ${EXEC_FILES} DESTINATION "${INSTALL_PREFIX}"
+        COMPONENT component)
+
+install(FILES geometry_recognition.py requirements.txt
+        DESTINATION "${INSTALL_PREFIX}"
+        COMPONENT component)
+
+install(DIRECTORY config
+        DESTINATION "${INSTALL_PREFIX}"
         COMPONENT component)
 
 install(FILES ${PROJECT_SOURCE_DIR}/RTC.xml DESTINATION ${INSTALL_PREFIX}
