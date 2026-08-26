@@ -10,6 +10,8 @@
 #include "Arm_Controller.h"
 #include <iostream>
 
+static bool arm_initialized = false;
+
 // Module specification
 // <rtc-template block="module_spec">
 #if RTM_MAJOR_VERSION >= 2
@@ -113,15 +115,9 @@ RTC::ReturnCode_t Arm_Controller::onFinalize()
 
 RTC::ReturnCode_t Arm_Controller::onActivated(RTC::UniqueId /*ec_id*/)
 {
-  std::cout << "[Arm_Controller] onActivated start" << std::endl;
+  std::cout << "[Arm_Controller] Activated" << std::endl;
 
-  std::cout << "[Arm_Controller] servoON start" << std::endl;
-  m_JARA_ARM_ManipulatorCommonInterface_Common->servoON();
-  std::cout << "[Arm_Controller] servoON done" << std::endl;
-
-  std::cout << "[Arm_Controller] goHome start" << std::endl;
-  m_JARA_ARM_ManipulatorCommonInterface_Middle->goHome();
-  std::cout << "[Arm_Controller] goHome done" << std::endl;
+  arm_initialized = false;
 
   return RTC::RTC_OK;
 }
@@ -139,6 +135,53 @@ RTC::ReturnCode_t Arm_Controller::onDeactivated(RTC::UniqueId /*ec_id*/)
 
 RTC::ReturnCode_t Arm_Controller::onExecute(RTC::UniqueId /*ec_id*/)
 {
+  // Active後に初期化が完了するまで繰り返し試す
+  if (!arm_initialized)
+  {
+    try
+    {
+      std::cout << "[Arm_Controller] servoON start" << std::endl;
+
+      JARA_ARM::RETURN_ID_var servo_ret =
+        m_JARA_ARM_ManipulatorCommonInterface_Common->servoON();
+
+      if (servo_ret->id != JARA_ARM::OK)
+      {
+        std::cout << "[Arm_Controller] servoON failed: "
+                  << servo_ret->comment << std::endl;
+
+        return RTC::RTC_OK;
+      }
+
+      std::cout << "[Arm_Controller] servoON done" << std::endl;
+      std::cout << "[Arm_Controller] goHome start" << std::endl;
+
+      JARA_ARM::RETURN_ID_var home_ret =
+        m_JARA_ARM_ManipulatorCommonInterface_Middle->goHome();
+
+      if (home_ret->id != JARA_ARM::OK)
+      {
+        std::cout << "[Arm_Controller] goHome failed: "
+                  << home_ret->comment << std::endl;
+
+        return RTC::RTC_OK;
+      }
+
+      std::cout << "[Arm_Controller] goHome done" << std::endl;
+
+      // servoONとgoHomeの両方が成功したときだけtrue
+      arm_initialized = true;
+    }
+    catch (...)
+    {
+      std::cout
+        << "[Arm_Controller] myCobot is not ready. retry..."
+        << std::endl;
+
+      return RTC::RTC_OK;
+    }
+  }
+
   // target_pose_before に新しい目標値が届いたか確認
   if (m_target_pose_beforeIn.isNew())
   {
