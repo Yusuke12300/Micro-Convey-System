@@ -115,6 +115,24 @@ RTC::ReturnCode_t Path_Generation::onDeactivated(RTC::UniqueId /*ec_id*/)
 
 RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
 {
+    if (m_bumperIn.isNew()) {
+        m_bumperIn.read();
+
+        if (m_bumper.data[1] == true) {
+             m_targetVelocity.data.vx = 0.0;
+             m_targetVelocity.data.vy = 0.0;
+             m_targetVelocity.data.va = 0.0;
+        }
+        else {
+            m_targetVelocity.data.vx = 0.2;
+            m_targetVelocity.data.vy = 0.0;
+            m_targetVelocity.data.va = 0.0;
+        }
+
+        m_targetVelocityOut.write();
+    }
+
+
   return RTC::RTC_OK;
 }
 

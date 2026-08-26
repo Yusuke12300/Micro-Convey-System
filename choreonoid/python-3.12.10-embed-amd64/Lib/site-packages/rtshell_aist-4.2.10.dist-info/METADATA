@@ -1,0 +1,25 @@
+Metadata-Version: 2.1
+Name: rtshell-aist
+Version: 4.2.10
+Summary: Shell commands for managing RT Components and RT Systems.
+Home-page: https://github.com/OpenRTM/rtshell
+Author: Geoffrey Biggs, Noriaki Ando and contributors
+Author-email: n-ando@aist.go.jp
+License: LGPL3
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Software Development
+Classifier: Topic :: Utilities
+License-File: LICENSE.txt
+Requires-Dist: rtctree-aist>=4
+Requires-Dist: rtsprofile-aist>=4
+
+Shell commands for managing RT-Middleware.

@@ -1,0 +1,83 @@
+2026-08-26 15:07:32,242 file.manager INFO 2.0.2
+2026-08-26 15:07:32,242 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-26 15:07:32,242 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-26 15:07:32,242 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-26 15:07:32,242 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-26 15:07:32,242 file.manager INFO   All right reserved.
+2026-08-26 15:07:32,242 file.manager INFO Manager starting.
+2026-08-26 15:07:32,242 file.manager INFO Starting local logging.
+2026-08-26 15:07:32,252 file.manager.namingmanager INFO NameServer connection succeeded: corba/localhost
+2026-08-26 15:07:36,365 file.ManagerServant INFO Master manager not found
+2026-08-26 15:07:36,369 file.LocalServiceAdmin INFO All the local services are enabled.
+2026-08-26 15:07:36,375 file.manager INFO Component type conf file: Dummy_Vision.conf loaded.
+2026-08-26 15:07:36,376 file.ec_base INFO setRate(1000000.000000) done
+2026-08-26 15:07:36,377 file.ec_base INFO setRate(1000.000000) done
+2026-08-26 15:07:36,377 file.rtobject INFO 1 execution context was created.
+2026-08-26 15:07:36,379 file.rtobject INFO Initial active configuration set is default.
+2026-08-26 15:07:48,198 file.SdoServiceAdmin WARNING No available SDO service in the factory: 
+2026-08-26 15:07:48,198 file.SdoServiceAdmin ERROR type  not exists.
+2026-08-26 15:07:50,592 file.ManagerServant INFO Master manager not found
+2026-08-26 15:08:00,644 file.ManagerServant INFO Master manager not found
+2026-08-26 15:08:10,712 file.ManagerServant INFO Master manager not found
+2026-08-26 15:08:20,792 file.ManagerServant INFO Master manager not found
+2026-08-26 15:08:30,844 file.ManagerServant INFO Master manager not found
+2026-08-26 15:08:40,873 file.ManagerServant INFO Master manager not found
+2026-08-26 15:08:50,923 file.ManagerServant INFO Master manager not found
+2026-08-26 15:09:00,970 file.ManagerServant INFO Master manager not found
+2026-08-26 15:09:11,002 file.ManagerServant INFO Master manager not found
+2026-08-26 15:09:21,029 file.ManagerServant INFO Master manager not found
+2026-08-26 15:09:31,067 file.ManagerServant INFO Master manager not found
+2026-08-26 15:09:41,118 file.ManagerServant INFO Master manager not found
+2026-08-26 15:09:51,164 file.ManagerServant INFO Master manager not found
+2026-08-26 15:10:01,223 file.ManagerServant INFO Master manager not found
+2026-08-26 15:10:11,284 file.ManagerServant INFO Master manager not found
+2026-08-26 15:10:21,341 file.ManagerServant INFO Master manager not found
+2026-08-26 15:10:31,350 file.ManagerServant INFO Master manager not found
+2026-08-26 15:10:41,418 file.ManagerServant INFO Master manager not found
+2026-08-26 15:10:51,457 file.ManagerServant INFO Master manager not found
+2026-08-26 15:11:01,516 file.ManagerServant INFO Master manager not found
+2026-08-26 15:11:11,580 file.ManagerServant INFO Master manager not found
+2026-08-26 15:11:21,633 file.ManagerServant INFO Master manager not found
+2026-08-26 15:11:31,672 file.ManagerServant INFO Master manager not found
+2026-08-26 15:11:41,708 file.ManagerServant INFO Master manager not found
+2026-08-26 15:11:51,748 file.ManagerServant INFO Master manager not found
+2026-08-26 15:12:01,767 file.ManagerServant INFO Master manager not found
+2026-08-26 15:12:11,811 file.ManagerServant INFO Master manager not found
+2026-08-26 15:12:21,848 file.ManagerServant INFO Master manager not found
+2026-08-26 15:12:31,898 file.ManagerServant INFO Master manager not found
+2026-08-26 15:12:41,938 file.ManagerServant INFO Master manager not found
+2026-08-26 15:12:51,983 file.ManagerServant INFO Master manager not found
+2026-08-26 15:13:02,030 file.ManagerServant INFO Master manager not found
+2026-08-26 15:13:12,083 file.ManagerServant INFO Master manager not found
+2026-08-26 15:13:22,138 file.ManagerServant INFO Master manager not found
+2026-08-26 15:13:32,208 file.ManagerServant INFO Master manager not found
+2026-08-26 15:13:42,269 file.ManagerServant INFO Master manager not found
+2026-08-26 15:13:52,334 file.ManagerServant INFO Master manager not found
+2026-08-26 15:14:02,398 file.ManagerServant INFO Master manager not found
+2026-08-26 15:14:12,458 file.ManagerServant INFO Master manager not found
+2026-08-26 15:14:22,506 file.ManagerServant INFO Master manager not found
+2026-08-26 15:14:32,581 file.ManagerServant INFO Master manager not found
+2026-08-26 15:14:42,639 file.ManagerServant INFO Master manager not found
+2026-08-26 15:14:52,687 file.ManagerServant INFO Master manager not found
+2026-08-26 15:15:02,745 file.ManagerServant INFO Master manager not found
+2026-08-26 15:15:04,019 file.target_point WARNING Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\OpenRTM_aist\PortBase.py", line 2305, in checkPorts
+    if port._non_existent():
+       ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\omniORB\CORBA.py", line 560, in _non_existent
+    return self._obj.nonExistent()
+           ^^^^^^^^^^^^^^^^^^^^^^^
+omniORB.CORBA._omni_sys_exc: CORBA.TRANSIENT(omniORB.TRANSIENT_ConnectFailed, CORBA.COMPLETED_NO)
+
+2026-08-26 15:15:04,019 file.target_point WARNING Dead connection: 9c3340cc-a114-11f1-a076-3c219c3cf96e
+2026-08-26 15:15:06,071 file.target_point WARNING Traceback (most recent call last):
+  File "C:\Python311\Lib\site-packages\OpenRTM_aist\PortBase.py", line 1664, in disconnectNext
+    return p.notify_disconnect(connector_profile.connector_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python311\Lib\site-packages\OpenRTM_aist\RTM_IDL\RTC_idl.py", line 1207, in notify_disconnect
+    return self._obj.invoke("notify_disconnect", _0_RTC.PortService._d_notify_disconnect, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+omniORB.CORBA._omni_sys_exc: CORBA.TRANSIENT(omniORB.TRANSIENT_ConnectFailed, CORBA.COMPLETED_NO)
+
+2026-08-26 15:15:12,746 file.ManagerServant INFO Master manager not found
+2026-08-26 15:15:22,742 file.ManagerServant INFO Master manager not found

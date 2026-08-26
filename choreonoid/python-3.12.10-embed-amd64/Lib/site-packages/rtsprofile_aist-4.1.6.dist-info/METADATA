@@ -1,0 +1,21 @@
+Metadata-Version: 2.1
+Name: rtsprofile-aist
+Version: 4.1.6
+Summary: Library to read, manipulate and write RT system profiles using the RTSProfile XML schema.
+Home-page: https://github.com/OpenRTM/rtsprofile
+Author: Geoffrey Biggs, Noriaki Ando
+Author-email: n-ando@aist.go.jp
+License: LGPL3
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Software Development
+License-File: LICENSE.txt
+
+Library to read, manipulate and write RT system profiles using the RTSProfile XML schema.
