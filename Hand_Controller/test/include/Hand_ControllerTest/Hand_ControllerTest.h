@@ -218,10 +218,6 @@ class Hand_ControllerTest
 
   // DataInPort declaration
   // <rtc-template block="inport_declare">
-  RTC::TimedBoolean m_hand_start;
-  /*!
-   */
-  RTC::InPort<RTC::TimedBoolean> m_hand_startIn;
   RTC::TimedBoolean m_hand_end;
   /*!
    */
@@ -232,16 +228,26 @@ class Hand_ControllerTest
 
   // DataOutPort declaration
   // <rtc-template block="outport_declare">
+  RTC::TimedBoolean m_hand_start;
+  /*!
+   */
+  RTC::OutPort<RTC::TimedBoolean> m_hand_startOut;
   
   // </rtc-template>
 
   // CORBA Port declaration
   // <rtc-template block="corbaport_declare">
+  /*!
+   */
+  RTC::CorbaPort m_middlePort;
   
   // </rtc-template>
 
   // Service declaration
   // <rtc-template block="service_declare">
+  /*!
+   */
+  JARA_ARM_ManipulatorCommonInterface_MiddleSVC_impl m_JARA_ARM_ManipulatorCommonInterface_Middle;
   
   // </rtc-template>
 

@@ -26,7 +26,7 @@ ModuleDescription
 | Vendor | VenderName |
 | Category | Controller |
 | Comp. Type | STATIC |
-| Act. Type | PERIODIC |
+| Act. Type | SPORADIC |
 | Kind | DataFlowComponent |
 | MAX Inst. | 1 |
 

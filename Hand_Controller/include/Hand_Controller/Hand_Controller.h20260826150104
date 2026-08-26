@@ -22,6 +22,7 @@
 // Service Consumer stub headers
 // <rtc-template block="consumer_stub_h">
 #include "ManipulatorCommonInterface_MiddleStub.h"
+#include "ManipulatorCommonInterface_CommonStub.h"
 #include "BasicDataTypeStub.h"
 
 // </rtc-template>
@@ -222,16 +223,16 @@ class Hand_Controller
 
   // DataInPort declaration
   // <rtc-template block="inport_declare">
-  RTC::TimedBoolean m_hand_start;
-  /*!
-   */
-  RTC::InPort<RTC::TimedBoolean> m_hand_startIn;
   
   // </rtc-template>
 
 
   // DataOutPort declaration
   // <rtc-template block="outport_declare">
+  RTC::TimedBoolean m_hand_start;
+  /*!
+   */
+  RTC::OutPort<RTC::TimedBoolean> m_hand_startOut;
   RTC::TimedBoolean m_hand_end;
   /*!
    */
@@ -244,6 +245,9 @@ class Hand_Controller
   /*!
    */
   RTC::CorbaPort m_middlePort;
+  /*!
+   */
+  RTC::CorbaPort m_commonPort;
   
   // </rtc-template>
 
@@ -257,6 +261,9 @@ class Hand_Controller
   /*!
    */
   RTC::CorbaConsumer<JARA_ARM::ManipulatorCommonInterface_Middle> m_JARA_ARM_ManipulatorCommonInterface_Middle;
+  /*!
+   */
+  RTC::CorbaConsumer<JARA_ARM::ManipulatorCommonInterface_Common> m_JARA_ARM_ManipulatorCommonInterface_Common;
   
   // </rtc-template>
 

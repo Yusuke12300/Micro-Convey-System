@@ -23,7 +23,7 @@ static const char* hand_controller_spec[] =
     "version",           "1.0.0",
     "vendor",            "VenderName",
     "category",          "Controller",
-    "activity_type",     "PERIODIC",
+    "activity_type",     "SPORADIC",
     "kind",              "DataFlowComponent",
     "max_instance",      "1",
     "language",          "C++",
