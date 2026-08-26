@@ -1,0 +1,54 @@
+# myCobot280Io CMake config file
+#
+# This file sets the following variables:
+# myCobot280Io_FOUND - Always TRUE.
+# myCobot280Io_INCLUDE_DIRS - Directories containing the myCobot280Io include files.
+# myCobot280Io_IDL_DIRS - Directories containing the myCobot280Io IDL files.
+# myCobot280Io_LIBRARIES - Libraries needed to use myCobot280Io.
+# myCobot280Io_DEFINITIONS - Compiler flags for myCobot280Io.
+# myCobot280Io_VERSION - The version of myCobot280Io found.
+# myCobot280Io_VERSION_MAJOR - The major version of myCobot280Io found.
+# myCobot280Io_VERSION_MINOR - The minor version of myCobot280Io found.
+# myCobot280Io_VERSION_REVISION - The revision version of myCobot280Io found.
+# myCobot280Io_VERSION_CANDIDATE - The candidate version of myCobot280Io found.
+
+message(STATUS "Found myCobot280Io-@PROJECT_VERSION@")
+set(myCobot280Io_FOUND TRUE)
+
+find_package(<dependency> REQUIRED)
+
+#set(myCobot280Io_INCLUDE_DIRS
+#    "@CMAKE_INSTALL_PREFIX@/include/@PROJECT_NAME_LOWER@-@PROJECT_VERSION_MAJOR@"
+#    ${<dependency>_INCLUDE_DIRS}
+#    )
+#
+#set(myCobot280Io_IDL_DIRS
+#    "@CMAKE_INSTALL_PREFIX@/include/@PROJECT_NAME_LOWER@-@PROJECT_VERSION_MAJOR@/idl")
+set(myCobot280Io_INCLUDE_DIRS
+    "@CMAKE_INSTALL_PREFIX@/include/@CPACK_PACKAGE_FILE_NAME@"
+    ${<dependency>_INCLUDE_DIRS}
+    )
+set(myCobot280Io_IDL_DIRS
+    "@CMAKE_INSTALL_PREFIX@/include/@CPACK_PACKAGE_FILE_NAME@/idl")
+
+
+if(WIN32)
+    set(myCobot280Io_LIBRARIES
+        "@CMAKE_INSTALL_PREFIX@/@LIB_INSTALL_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@@PROJECT_NAME_LOWER@@CMAKE_STATIC_LIBRARY_SUFFIX@"
+        ${<dependency>_LIBRARIES}
+        )
+else(WIN32)
+    set(myCobot280Io_LIBRARIES
+        "@CMAKE_INSTALL_PREFIX@/@LIB_INSTALL_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@@PROJECT_NAME_LOWER@@CMAKE_SHARED_LIBRARY_SUFFIX@"
+        ${<dependency>_LIBRARIES}
+        )
+endif(WIN32)
+
+set(myCobot280Io_DEFINITIONS ${<dependency>_DEFINITIONS})
+
+set(myCobot280Io_VERSION @PROJECT_VERSION@)
+set(myCobot280Io_VERSION_MAJOR @PROJECT_VERSION_MAJOR@)
+set(myCobot280Io_VERSION_MINOR @PROJECT_VERSION_MINOR@)
+set(myCobot280Io_VERSION_REVISION @PROJECT_VERSION_REVISION@)
+set(myCobot280Io_VERSION_CANDIDATE @PROJECT_VERSION_CANDIDATE@)
+

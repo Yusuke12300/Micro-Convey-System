@@ -1,0 +1,391 @@
+﻿# ArmController
+
+## Overview
+
+Arm Controller Component
+
+## Description
+
+
+
+### Input and Output
+
+
+
+### Algorithm etc
+
+
+
+### Basic Information
+
+|  |  |
+----|---- 
+| Module Name | ArmController |
+| Description | Arm Controller Component |
+| Version | 1.0.0 |
+| Vendor | AIST |
+| Category | Controller |
+| Comp. Type | STATIC |
+| Act. Type | PERIODIC |
+| Kind | DataFlowComponent |
+| MAX Inst. | 1 |
+
+### Activity definition
+
+<table>
+  <tr>
+    <td rowspan="4">on_initialize</td>
+    <td colspan="2">implemented</td>
+    <tr>
+      <td>Description</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PreCondition</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PostCondition</td>
+      <td></td>
+    </tr>
+  </tr>
+  <tr>
+    <td>on_finalize</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>on_startup</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>on_shutdown</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td rowspan="4">on_activated</td>
+    <td colspan="2">implemented</td>
+    <tr>
+      <td>Description</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PreCondition</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PostCondition</td>
+      <td></td>
+    </tr>
+  </tr>
+  <tr>
+    <td rowspan="4">on_deactivated</td>
+    <td colspan="2">implemented</td>
+    <tr>
+      <td>Description</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PreCondition</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PostCondition</td>
+      <td></td>
+    </tr>
+  </tr>
+  <tr>
+    <td rowspan="4">on_execute</td>
+    <td colspan="2">implemented</td>
+    <tr>
+      <td>Description</td>
+      <td>コンフィギュレーションパラメータでロボットアームの位置を制御するコマンド実行</td>
+    </tr>
+    <tr>
+      <td>PreCondition</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PostCondition</td>
+      <td></td>
+    </tr>
+  </tr>
+  <tr>
+    <td>on_aborting</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>on_error</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>on_reset</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>on_state_update</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>on_rate_changed</td>
+    <td colspan="2"></td>
+  </tr>
+</table>
+
+### InPorts definition
+
+
+### OutPorts definition
+
+
+### Service Port definition
+
+#### middle
+
+
+
+<table>
+  <tr>
+    <td>I/F Description</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td colspan="3">Interface</td>
+  </tr>
+  <tr>
+    <td rowspan="9">JARA_ARM_ManipulatorCommonInterface_Middle</td>
+    <td>Type</td>
+    <td>JARA_ARM::ManipulatorCommonInterface_Middle</td>
+    <tr>
+      <td>Direction</td>
+      <td>Consumer</td>
+    </tr>
+    <tr>
+      <td>Description</td>
+      <td>ロボットアーム制御機能共通インタフェースの中レベルモーションコマンドを操作</td>
+    </tr>
+    <tr>
+      <td>IDL file</td>
+      <td>ManipulatorCommonInterface_Middle.idl</td>
+    </tr>
+    <tr>
+      <td>Argument</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Return Value</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Exception</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PreCondition</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PostCondition</td>
+      <td></td>
+    </tr>
+  </tr>
+</table>
+
+#### common
+
+
+
+<table>
+  <tr>
+    <td>I/F Description</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td colspan="3">Interface</td>
+  </tr>
+  <tr>
+    <td rowspan="9">JARA_ARM_ManipulatorCommonInterface_Common</td>
+    <td>Type</td>
+    <td>JARA_ARM::ManipulatorCommonInterface_Common</td>
+    <tr>
+      <td>Direction</td>
+      <td>Consumer</td>
+    </tr>
+    <tr>
+      <td>Description</td>
+      <td>ロボットアーム制御機能共通インタフェースの共通コマンドを操作</td>
+    </tr>
+    <tr>
+      <td>IDL file</td>
+      <td>ManipulatorCommonInterface_Common.idl</td>
+    </tr>
+    <tr>
+      <td>Argument</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Return Value</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Exception</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PreCondition</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>PostCondition</td>
+      <td></td>
+    </tr>
+  </tr>
+</table>
+
+
+### Configuration definition
+
+#### pos_x
+
+ロボットアーム手先位置のX座標
+
+
+<table>
+  <tr>
+    <td>DataType</td>
+    <td colspan="2">double</td>
+  </tr>
+  <tr>
+    <td>DefaultValue</td>
+    <td>0.2</td>
+    <td>0.2</td>
+  </tr>
+  <tr>
+    <td>Unit</td>
+    <td>m</td>
+    <td>m</td>
+  </tr>
+  <tr>
+    <td>Widget</td>
+    <td colspan="2">text</td>
+  </tr>
+  <tr>
+    <td>Step</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Constraint</td>
+    <td>-0.3<x<0.3</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>Range</td>
+    <td colspan="2"></td>
+  </tr>
+</table>
+
+#### pos_y
+
+ロボットアーム手先位置のY座標
+
+
+<table>
+  <tr>
+    <td>DataType</td>
+    <td colspan="2">double</td>
+  </tr>
+  <tr>
+    <td>DefaultValue</td>
+    <td>0.0</td>
+    <td>0.0</td>
+  </tr>
+  <tr>
+    <td>Unit</td>
+    <td>m</td>
+    <td>m</td>
+  </tr>
+  <tr>
+    <td>Widget</td>
+    <td colspan="2">text</td>
+  </tr>
+  <tr>
+    <td>Step</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Constraint</td>
+    <td>-0.3<x<0.3</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>Range</td>
+    <td colspan="2"></td>
+  </tr>
+</table>
+
+#### pos_z
+
+ロボットアーム手先位置のZ座標
+
+
+<table>
+  <tr>
+    <td>DataType</td>
+    <td colspan="2">double</td>
+  </tr>
+  <tr>
+    <td>DefaultValue</td>
+    <td>0.16</td>
+    <td>0.16</td>
+  </tr>
+  <tr>
+    <td>Unit</td>
+    <td>m</td>
+    <td>m</td>
+  </tr>
+  <tr>
+    <td>Widget</td>
+    <td colspan="2">text</td>
+  </tr>
+  <tr>
+    <td>Step</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Constraint</td>
+    <td>0.0<x<0.45</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>Range</td>
+    <td colspan="2"></td>
+  </tr>
+</table>
+
+
+## Demo
+
+## Requirement
+
+## Setup
+
+### Windows
+
+### Ubuntu
+
+## Usage
+
+## Running the tests
+
+## LICENCE
+
+
+
+
+## References
+
+
+
+
+## Author
+
+

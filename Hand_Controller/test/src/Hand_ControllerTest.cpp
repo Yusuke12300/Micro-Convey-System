@@ -39,8 +39,9 @@ static const char* hand_controller_spec[] =
 Hand_ControllerTest::Hand_ControllerTest(RTC::Manager* manager)
     // <rtc-template block="initializer">
   : RTC::DataFlowComponentBase(manager),
-    m_hand_startIn("hand_start", m_hand_start),
-    m_hand_endIn("hand_end", m_hand_end)
+    m_hand_startOut("hand_start", m_hand_start),
+    m_hand_endIn("hand_end", m_hand_end),
+    m_middlePort("middle")
 
     // </rtc-template>
 {
@@ -60,16 +61,18 @@ RTC::ReturnCode_t Hand_ControllerTest::onInitialize()
   // Registration: InPort/OutPort/Service
   // <rtc-template block="registration">
   // Set InPort buffers
-  addInPort("hand_start", m_hand_startIn);
   addInPort("hand_end", m_hand_endIn);
   
   // Set OutPort buffer
+  addOutPort("hand_start", m_hand_startOut);
   
   // Set service provider to Ports
+  m_middlePort.registerProvider("JARA_ARM_ManipulatorCommonInterface_Middle", "JARA_ARM::ManipulatorCommonInterface_Middle", m_JARA_ARM_ManipulatorCommonInterface_Middle);
   
   // Set service consumers to Ports
   
   // Set CORBA Service Ports
+  addPort(m_middlePort);
   
   // </rtc-template>
 

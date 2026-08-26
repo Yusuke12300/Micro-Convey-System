@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<rts:RtsProfile rts:version="0.2" rts:id="RTSystem:AIST:myCobot280Sample:1.0.0" xmlns:rts="http://www.openrtp.org/namespaces/rts" xmlns:rtsExt="http://www.openrtp.org/namespaces/rts_ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<rts:Components xsi:type="rtsExt:component_ext" rts:isRequired="false" rts:compositeType="None" rts:activeConfigurationSet="default" rts:instanceName="ArmController0" rts:pathUri="localhost/ArmController0.rtc" rts:id="RTC:VenderName:Category:ArmController0:1.0.0">
+		<rtsExt:Properties rtsExt:value="true" rtsExt:name="OpenRTM_NS" />
+		<rts:ServicePorts xsi:type="rtsExt:serviceport_ext" rts:name="ArmController0.middle">
+			<rtsExt:Properties rtsExt:value="CorbaPort" rtsExt:name="port.port_type" />
+		</rts:ServicePorts>
+		<rts:ServicePorts xsi:type="rtsExt:serviceport_ext" rts:name="ArmController0.common">
+			<rtsExt:Properties rtsExt:value="CorbaPort" rtsExt:name="port.port_type" />
+		</rts:ServicePorts>
+		<rts:ConfigurationSets rts:id="default">
+			<rts:ConfigurationData rts:data="0.2" rts:name="pos_x" />
+			<rts:ConfigurationData rts:data="0.0" rts:name="pos_y" />
+			<rts:ConfigurationData rts:data="0.16" rts:name="pos_z" />
+		</rts:ConfigurationSets>
+		<rts:ConfigurationSets rts:id="__widget__">
+			<rts:ConfigurationData rts:data="text" rts:name="pos_x" />
+			<rts:ConfigurationData rts:data="text" rts:name="pos_y" />
+			<rts:ConfigurationData rts:data="text" rts:name="pos_z" />
+		</rts:ConfigurationSets>
+		<rts:ConfigurationSets rts:id="__constraints__">
+			<rts:ConfigurationData rts:data="-0.3&lt;x&lt;0.3" rts:name="pos_x" />
+			<rts:ConfigurationData rts:data="-0.3&lt;x&lt;0.3" rts:name="pos_y" />
+			<rts:ConfigurationData rts:data="0.0&lt;x&lt;0.45" rts:name="pos_z" />
+		</rts:ConfigurationSets>
+		<rts:ConfigurationSets rts:id="__type__">
+			<rts:ConfigurationData rts:data="double" rts:name="pos_x" />
+			<rts:ConfigurationData rts:data="double" rts:name="pos_y" />
+			<rts:ConfigurationData rts:data="double" rts:name="pos_z" />
+		</rts:ConfigurationSets>
+		<rts:ExecutionContexts xsi:type="rtsExt:execution_context_ext" rts:id="0" rts:rate="1000" rts:kind="PERIODIC">
+			<rtsExt:Properties rtsExt:value="YES" rtsExt:name="sync_transition" />
+			<rtsExt:Properties rtsExt:value="0.5" rtsExt:name="transition_timeout" />
+			<rtsExt:Properties rtsExt:value="PeriodicExecutionContext" rtsExt:name="type" />
+			<rtsExt:Properties rtsExt:value="1000" rtsExt:name="rate" />
+			<rtsExt:Properties rtsExt:value="" rtsExt:name="name" />
+		</rts:ExecutionContexts>
+		<rtsExt:Location rtsExt:direction="RIGHT" rtsExt:width="-1" rtsExt:height="-1" rtsExt:x="0" rtsExt:y="108" />
+	</rts:Components>
+	<rts:Components xsi:type="rtsExt:component_ext" rts:isRequired="false" rts:compositeType="None" rts:activeConfigurationSet="default" rts:instanceName="myCobot280Io0" rts:pathUri="localhost/myCobot280Io0.rtc" rts:id="RTC:AIST:Simulator:myCobot280Io0:1.0.0">
+		<rtsExt:Properties rtsExt:value="true" rtsExt:name="OpenRTM_NS" />
+		<rts:ServicePorts xsi:type="rtsExt:serviceport_ext" rts:name="myCobot280Io0.middle">
+			<rtsExt:Properties rtsExt:value="CorbaPort" rtsExt:name="port.port_type" />
+		</rts:ServicePorts>
+		<rts:ServicePorts xsi:type="rtsExt:serviceport_ext" rts:name="myCobot280Io0.common">
+			<rtsExt:Properties rtsExt:value="CorbaPort" rtsExt:name="port.port_type" />
+		</rts:ServicePorts>
+		<rts:ConfigurationSets rts:id="default" />
+		<rts:ExecutionContexts xsi:type="rtsExt:execution_context_ext" rts:id="0" rts:rate="1000000" rts:kind="PERIODIC">
+			<rtsExt:Properties rtsExt:value="YES" rtsExt:name="sync_transition" />
+			<rtsExt:Properties rtsExt:value="0.5" rtsExt:name="transition_timeout" />
+			<rtsExt:Properties rtsExt:value="PeriodicExecutionContext" rtsExt:name="type" />
+		</rts:ExecutionContexts>
+		<rts:ExecutionContexts xsi:type="rtsExt:execution_context_ext" rts:id="1" rts:rate="1000" rts:kind="PERIODIC">
+			<rtsExt:Properties rtsExt:value="YES" rtsExt:name="sync_transition" />
+			<rtsExt:Properties rtsExt:value="0.5" rtsExt:name="transition_timeout" />
+			<rtsExt:Properties rtsExt:value="SimulatorExecutionContext" rtsExt:name="type" />
+		</rts:ExecutionContexts>
+		<rtsExt:Location rtsExt:direction="RIGHT" rtsExt:width="-1" rtsExt:height="-1" rtsExt:x="204" rtsExt:y="164" />
+	</rts:Components>
+	<rts:ServicePortConnectors xsi:type="rtsExt:serviceport_connector_ext" rts:connectorId="5fbda822-d1f0-429c-8691-bfeb0041d658" rts:name="ArmController0.middle_myCobot280Io0.middle">
+		<rts:sourceServicePort xsi:type="rtsExt:target_port_ext" rts:portName="ArmController0.middle" rts:instanceName="ArmController0" rts:componentId="RTC:VenderName:Category:ArmController0:1.0.0">
+			<rtsExt:Properties rtsExt:value="localhost/ArmController0.rtc" rtsExt:name="COMPONENT_PATH_ID" />
+		</rts:sourceServicePort>
+		<rts:targetServicePort xsi:type="rtsExt:target_port_ext" rts:portName="myCobot280Io0.middle" rts:instanceName="myCobot280Io0" rts:componentId="RTC:AIST:Simulator:myCobot280Io0:1.0.0">
+			<rtsExt:Properties rtsExt:value="localhost/myCobot280Io0.rtc" rtsExt:name="COMPONENT_PATH_ID" />
+		</rts:targetServicePort>
+	</rts:ServicePortConnectors>
+	<rts:ServicePortConnectors xsi:type="rtsExt:serviceport_connector_ext" rts:connectorId="2e745f87-22b8-497b-8a5c-36b3782641d2" rts:name="ArmController0.common_myCobot280Io0.common">
+		<rts:sourceServicePort xsi:type="rtsExt:target_port_ext" rts:portName="ArmController0.common" rts:instanceName="ArmController0" rts:componentId="RTC:VenderName:Category:ArmController0:1.0.0">
+			<rtsExt:Properties rtsExt:value="localhost/ArmController0.rtc" rtsExt:name="COMPONENT_PATH_ID" />
+		</rts:sourceServicePort>
+		<rts:targetServicePort xsi:type="rtsExt:target_port_ext" rts:portName="myCobot280Io0.common" rts:instanceName="myCobot280Io0" rts:componentId="RTC:AIST:Simulator:myCobot280Io0:1.0.0">
+			<rtsExt:Properties rtsExt:value="localhost/myCobot280Io0.rtc" rtsExt:name="COMPONENT_PATH_ID" />
+		</rts:targetServicePort>
+	</rts:ServicePortConnectors>
+</rts:RtsProfile>
