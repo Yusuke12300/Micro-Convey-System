@@ -1,0 +1,191 @@
+﻿// -*- C++ -*-
+// <rtc-template block="description">
+/*!
+ * @file  ArmController.cpp
+ * @brief Arm Controller Component
+ *
+ */
+// </rtc-template>
+
+#include "ArmController.h"
+
+// Module specification
+// <rtc-template block="module_spec">
+#if RTM_MAJOR_VERSION >= 2
+static const char* const armcontroller_spec[] =
+#else
+static const char* armcontroller_spec[] =
+#endif
+  {
+    "implementation_id", "ArmController",
+    "type_name",         "ArmController",
+    "description",       "Arm Controller Component",
+    "version",           "1.0.0",
+    "vendor",            "AIST",
+    "category",          "Controller",
+    "activity_type",     "PERIODIC",
+    "kind",              "DataFlowComponent",
+    "max_instance",      "1",
+    "language",          "C++",
+    "lang_type",         "compile",
+    // Configuration variables
+    "conf.default.pos_x", "0.2",
+    "conf.default.pos_y", "0.0",
+    "conf.default.pos_z", "0.16",
+
+    // Widget
+    "conf.__widget__.pos_x", "slider.0.01",
+    "conf.__widget__.pos_y", "text",
+    "conf.__widget__.pos_z", "slider.0.01",
+    // Constraints
+    "conf.__constraints__.pos_x", "-0.3<x<0.3",
+    "conf.__constraints__.pos_y", "-0.3<x<0.3",
+    "conf.__constraints__.pos_z", "0.0<x<0.45",
+
+    "conf.__type__.pos_x", "float",
+    "conf.__type__.pos_y", "float",
+    "conf.__type__.pos_z", "float",
+
+    ""
+  };
+// </rtc-template>
+
+/*!
+ * @brief constructor
+ * @param manager Maneger Object
+ */
+ArmController::ArmController(RTC::Manager* manager)
+    // <rtc-template block="initializer">
+  : RTC::DataFlowComponentBase(manager),
+    m_middlePort("middle"),
+    m_commonPort("common")
+    // </rtc-template>
+{
+}
+
+/*!
+ * @brief destructor
+ */
+ArmController::~ArmController()
+{
+}
+
+
+
+RTC::ReturnCode_t ArmController::onInitialize()
+{
+  // Registration: InPort/OutPort/Service
+  // <rtc-template block="registration">
+  // Set InPort buffers
+  
+  // Set OutPort buffer
+
+  
+  // Set service provider to Ports
+  
+  // Set service consumers to Ports
+  m_middlePort.registerConsumer("JARA_ARM_ManipulatorCommonInterface_Middle", "Img::CameraCaptureService", m_JARA_ARM_ManipulatorCommonInterface_Middle);
+  m_commonPort.registerConsumer("JARA_ARM_ManipulatorCommonInterface_Common", "Img::CameraCaptureService", m_JARA_ARM_ManipulatorCommonInterface_Common);
+  
+  // Set CORBA Service Ports
+  addPort(m_middlePort);
+  addPort(m_commonPort);
+  
+  // </rtc-template>
+
+  // <rtc-template block="bind_config">
+  // Bind variables and configuration variable
+  bindParameter("pos_x", m_pos_x, "0.2");
+  bindParameter("pos_y", m_pos_y, "0.0");
+  bindParameter("pos_z", m_pos_z, "0.16");
+  // </rtc-template>
+
+  
+  return RTC::RTC_OK;
+}
+
+/*
+RTC::ReturnCode_t ArmController::onFinalize()
+{
+  return RTC::RTC_OK;
+}
+*/
+
+
+//RTC::ReturnCode_t ArmController::onStartup(RTC::UniqueId /*ec_id*/)
+//{
+//  return RTC::RTC_OK;
+//}
+
+
+//RTC::ReturnCode_t ArmController::onShutdown(RTC::UniqueId /*ec_id*/)
+//{
+//  return RTC::RTC_OK;
+//}
+
+
+//RTC::ReturnCode_t ArmController::onActivated(RTC::UniqueId /*ec_id*/)
+//{
+//  return RTC::RTC_OK;
+//}
+
+
+//RTC::ReturnCode_t ArmController::onDeactivated(RTC::UniqueId /*ec_id*/)
+//{
+//  return RTC::RTC_OK;
+//}
+
+/*!
+ * コンフィギュレーションパラメータでロボットアームの位置を制御する
+ * コマンド実行
+ */
+
+RTC::ReturnCode_t ArmController::onExecute(RTC::UniqueId /*ec_id*/)
+{
+  return RTC::RTC_OK;
+}
+
+
+//RTC::ReturnCode_t ArmController::onAborting(RTC::UniqueId /*ec_id*/)
+//{
+//  return RTC::RTC_OK;
+//}
+
+
+//RTC::ReturnCode_t ArmController::onError(RTC::UniqueId /*ec_id*/)
+//{
+//  return RTC::RTC_OK;
+//}
+
+
+//RTC::ReturnCode_t ArmController::onReset(RTC::UniqueId /*ec_id*/)
+//{
+//  return RTC::RTC_OK;
+//}
+
+
+//RTC::ReturnCode_t ArmController::onStateUpdate(RTC::UniqueId /*ec_id*/)
+//{
+//  return RTC::RTC_OK;
+//}
+
+
+//RTC::ReturnCode_t ArmController::onRateChanged(RTC::UniqueId /*ec_id*/)
+//{
+//  return RTC::RTC_OK;
+//}
+
+
+
+extern "C"
+{
+ 
+  void ArmControllerInit(RTC::Manager* manager)
+  {
+    coil::Properties profile(armcontroller_spec);
+    manager->registerFactory(profile,
+                             RTC::Create<ArmController>,
+                             RTC::Delete<ArmController>);
+  }
+  
+}

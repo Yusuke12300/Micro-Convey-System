@@ -1,0 +1,17 @@
+Aug 26 02:03:59.744 INFO: manager: OpenRTM 2.1.0
+Aug 26 02:03:59.744 INFO: manager: Copyright (C) 2003-2026, Noriaki Ando and OpenRTM development team,
+Aug 26 02:03:59.744 INFO: manager:   Intelligent Systems Research Institute, AIST,
+Aug 26 02:03:59.744 INFO: manager: Copyright (C) 2026, Noriaki Ando and OpenRTM development team,
+Aug 26 02:03:59.744 INFO: manager:   Industrial Cyber-Physical Research Center, AIST,
+Aug 26 02:03:59.744 INFO: manager:   All right reserved.
+Aug 26 02:03:59.744 INFO: manager: Manager starting.
+Aug 26 02:03:59.744 INFO: manager: Starting local logging.
+Aug 26 02:03:59.757 WARNING: NamingOnCorba: No endpoint for the CORBA naming service (localhost) was found.
+Aug 26 02:03:59.757 INFO: NamingManager: NameServer connection succeeded: corba/localhost
+Aug 26 02:03:59.758 INFO: ManagerServant: Named manager reference (INS) was successfully created.
+Aug 26 02:03:59.759 WARNING: ManagerServant: Master manager not found
+Aug 26 02:03:59.759 INFO: LocalServiceAdmin: All the local services are enabled.
+Aug 26 02:03:59.761 INFO: ec_base: setRate(1000000.000000) done
+Aug 26 02:03:59.761 INFO: ec_base: setRate(1000.000000) done
+Aug 26 02:03:59.761 INFO: Arm_Controller0: 1 execution context was created.
+Aug 26 02:03:59.762 INFO: Arm_Controller0: Initial active configuration set is default.
