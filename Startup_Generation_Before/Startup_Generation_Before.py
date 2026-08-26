@@ -217,7 +217,7 @@ class Startup_Generation_Before(OpenRTM_aist.DataFlowComponentBase):
                     # --- 型変換 ＆ 送信（アプローチ点） ---
                     self._d_target_pose.data.position.x = self.target_x
                     self._d_target_pose.data.position.y = self.target_y
-                    self._d_target_pose.data.position.z = self.target_z + 50.0 # Zに安全な高さを足す
+                    self._d_target_pose.data.position.z = self.target_z + 0.05 # Zに安全な高さを足す
                     
                     # 姿勢はすべて0（アーム制御RTC側で自動的に真下を向くため）
                     self._d_target_pose.data.orientation.r = 0.0
