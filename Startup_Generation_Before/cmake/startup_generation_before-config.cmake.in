@@ -1,0 +1,54 @@
+# Startup_Generation_Before CMake config file
+#
+# This file sets the following variables:
+# Startup_Generation_Before_FOUND - Always TRUE.
+# Startup_Generation_Before_INCLUDE_DIRS - Directories containing the Startup_Generation_Before include files.
+# Startup_Generation_Before_IDL_DIRS - Directories containing the Startup_Generation_Before IDL files.
+# Startup_Generation_Before_LIBRARIES - Libraries needed to use Startup_Generation_Before.
+# Startup_Generation_Before_DEFINITIONS - Compiler flags for Startup_Generation_Before.
+# Startup_Generation_Before_VERSION - The version of Startup_Generation_Before found.
+# Startup_Generation_Before_VERSION_MAJOR - The major version of Startup_Generation_Before found.
+# Startup_Generation_Before_VERSION_MINOR - The minor version of Startup_Generation_Before found.
+# Startup_Generation_Before_VERSION_REVISION - The revision version of Startup_Generation_Before found.
+# Startup_Generation_Before_VERSION_CANDIDATE - The candidate version of Startup_Generation_Before found.
+
+message(STATUS "Found Startup_Generation_Before-@PROJECT_VERSION@")
+set(Startup_Generation_Before_FOUND TRUE)
+
+find_package(<dependency> REQUIRED)
+
+#set(Startup_Generation_Before_INCLUDE_DIRS
+#    "@CMAKE_INSTALL_PREFIX@/include/@PROJECT_NAME_LOWER@-@PROJECT_VERSION_MAJOR@"
+#    ${<dependency>_INCLUDE_DIRS}
+#    )
+#
+#set(Startup_Generation_Before_IDL_DIRS
+#    "@CMAKE_INSTALL_PREFIX@/include/@PROJECT_NAME_LOWER@-@PROJECT_VERSION_MAJOR@/idl")
+set(Startup_Generation_Before_INCLUDE_DIRS
+    "@CMAKE_INSTALL_PREFIX@/include/@CPACK_PACKAGE_FILE_NAME@"
+    ${<dependency>_INCLUDE_DIRS}
+    )
+set(Startup_Generation_Before_IDL_DIRS
+    "@CMAKE_INSTALL_PREFIX@/include/@CPACK_PACKAGE_FILE_NAME@/idl")
+
+
+if(WIN32)
+    set(Startup_Generation_Before_LIBRARIES
+        "@CMAKE_INSTALL_PREFIX@/@LIB_INSTALL_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@@PROJECT_NAME_LOWER@@CMAKE_STATIC_LIBRARY_SUFFIX@"
+        ${<dependency>_LIBRARIES}
+        )
+else(WIN32)
+    set(Startup_Generation_Before_LIBRARIES
+        "@CMAKE_INSTALL_PREFIX@/@LIB_INSTALL_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@@PROJECT_NAME_LOWER@@CMAKE_SHARED_LIBRARY_SUFFIX@"
+        ${<dependency>_LIBRARIES}
+        )
+endif(WIN32)
+
+set(Startup_Generation_Before_DEFINITIONS ${<dependency>_DEFINITIONS})
+
+set(Startup_Generation_Before_VERSION @PROJECT_VERSION@)
+set(Startup_Generation_Before_VERSION_MAJOR @PROJECT_VERSION_MAJOR@)
+set(Startup_Generation_Before_VERSION_MINOR @PROJECT_VERSION_MINOR@)
+set(Startup_Generation_Before_VERSION_REVISION @PROJECT_VERSION_REVISION@)
+set(Startup_Generation_Before_VERSION_CANDIDATE @PROJECT_VERSION_CANDIDATE@)
+
