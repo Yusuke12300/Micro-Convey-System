@@ -132,6 +132,7 @@ RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
         m_targetVelocityOut.write();
     }
 
+
   return RTC::RTC_OK;
 }
 
