@@ -1,0 +1,10 @@
+Lib/site-packages
+Lib/site-packages/OpenRTM_aist
+Lib/site-packages/OpenRTM_aist/utils
+Lib/site-packages/OpenRTM_aist/RTM_IDL
+python312.zip
+DLLs
+.
+
+# Uncomment to run site.main() automatically
+#import site
