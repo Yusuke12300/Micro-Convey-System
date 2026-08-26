@@ -113,6 +113,14 @@ class Startup_Generation_Before(OpenRTM_aist.DataFlowComponentBase):
         # Set service consumers to Ports
 		
         # Set CORBA Service Ports
+
+        # =========================================================
+        # 【ここに追記】 軌道生成ステートマシン用の独自変数を初期化
+        # =========================================================
+        self.state = 0           # 現在の状態 (0:待機, 1:アプローチ点, 2:下降点)
+        self.target_x = 0.0      # 目標のX座標
+        self.target_y = 0.0      # 目標のY座標
+        self.target_z = 0.0      # 目標のZ座標
 		
         return RTC.RTC_OK
 	
@@ -188,11 +196,78 @@ class Startup_Generation_Before(OpenRTM_aist.DataFlowComponentBase):
     ##
     ## @return RTC::ReturnCode_t
     ##
-    ##
-    #def onExecute(self, ec_id):
-    #
-    #    return RTC.RTC_OK
-	
+
+    def onExecute(self, ec_id):
+        # 現在の状態（self.state）によって処理を分岐
+        match self.state:
+            
+            # ==========================================
+            # 状態0：画像データ受信待ち ＆ アプローチ点へ移動
+            # ==========================================
+            case 0:
+                if self._target_pointIn.isNew(): # TimedPoint3Dを受信
+                    data = self._target_pointIn.read()
+                    
+                    # 座標を保存
+                    self.target_x = data.data.x
+                    self.target_y = data.data.y
+                    self.target_z = data.data.z
+                    print(f"ターゲット受信: X={self.target_x}, Y={self.target_y}, Z={self.target_z}")
+
+                    # --- 型変換 ＆ 送信（アプローチ点） ---
+                    self._d_target_pose.data.position.x = self.target_x
+                    self._d_target_pose.data.position.y = self.target_y
+                    self._d_target_pose.data.position.z = self.target_z + 50.0 # Zに安全な高さを足す
+                    
+                    # 姿勢はすべて0（アーム制御RTC側で自動的に真下を向くため）
+                    self._d_target_pose.data.orientation.r = 0.0
+                    self._d_target_pose.data.orientation.p = 0.0
+                    self._d_target_pose.data.orientation.y = 0.0
+
+                    OpenRTM_aist.setTimestamp(self._d_target_pose)
+                    self._target_poseOut.write() # アーム制御RTCへTimedPose3Dを送信
+                    
+                    print("状態1: アプローチ点へ移動を開始します")
+                    self.state = 1  # 状態1へ切り替え
+            
+            # ==========================================
+            # 状態1：アプローチ点への完了通知待ち ＆ ターゲットへ下降
+            # ==========================================
+            case 1:
+                if self._endcmd_from_Arm_ControllerIn.isNew(): # TimedBooleanを受信
+                    complete_signal = self._endcmd_from_Arm_ControllerIn.read()
+                    
+                    if complete_signal.data == True:
+                        # --- 送信（ターゲット点へ下がる） ---
+                        self._d_target_pose.data.position.x = self.target_x
+                        self._d_target_pose.data.position.y = self.target_y
+                        self._d_target_pose.data.position.z = self.target_z # 本来のターゲットの高さ
+                        
+                        OpenRTM_aist.setTimestamp(self._d_target_pose)
+                        self._target_poseOut.write() 
+                        
+                        print("状態2: ターゲットへの下降を開始します")
+                        self.state = 2  # 状態2へ切り替え
+            
+            # ==========================================
+            # 状態2：下降の完了通知待ち ＆ 台車用RTCへ完了通知
+            # ==========================================
+            case 2:
+                if self._endcmd_from_Arm_ControllerIn.isNew():
+                    complete_signal = self._endcmd_from_Arm_ControllerIn.read()
+                    
+                    if complete_signal.data == True:
+                        print("ターゲットへ到達。台車用RTCへ完了通知を送ります")
+                        
+                        # 次のコンポーネントへアーム操作完了（TimedBoolean）を送信
+                        self._d_endcmd.data = True
+                        OpenRTM_aist.setTimestamp(self._d_endcmd)
+                        self._endcmdOut.write()
+                        
+                        self.state = 0  # 全て完了したので状態0（初期状態）に戻る
+
+        return RTC.RTC_OK
+    
     ###
     ##
     ## The aborting action when main logic error occurred.
