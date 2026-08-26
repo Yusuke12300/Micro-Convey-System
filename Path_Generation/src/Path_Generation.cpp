@@ -8,6 +8,7 @@
 // </rtc-template>
 
 #include "Path_Generation.h"
+#include<iostream>
 
 // Module specification
 // <rtc-template block="module_spec">
@@ -103,6 +104,9 @@ RTC::ReturnCode_t Path_Generation::onFinalize()
 
 RTC::ReturnCode_t Path_Generation::onActivated(RTC::UniqueId /*ec_id*/)
 {
+    m_step = 0;
+    std::cout << "Activeになりました" << std::endl;
+
   return RTC::RTC_OK;
 }
 
@@ -115,22 +119,43 @@ RTC::ReturnCode_t Path_Generation::onDeactivated(RTC::UniqueId /*ec_id*/)
 
 RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
 {
-    if (m_bumperIn.isNew()) {
-        m_bumperIn.read();
-
-        if (m_bumper.data[1] == true) {
-             m_targetVelocity.data.vx = 0.0;
-             m_targetVelocity.data.vy = 0.0;
-             m_targetVelocity.data.va = 0.0;
+    switch (m_step) {
+    case 0:
+        if (m_completeIn.isNew()) {
+            m_completeIn.read();
+            std::cout << "完了通知取得" << std::endl;
+            if (m_complete.data == true) {
+                m_step = 1;
+                std::cout << "Kobuki始動" << std::endl;
+            }
         }
-        else {
-            m_targetVelocity.data.vx = 0.2;
-            m_targetVelocity.data.vy = 0.0;
-            m_targetVelocity.data.va = 0.0;
-        }
+        break;
 
+    case 1:
+        if (m_bumperIn.isNew()) {
+            m_bumperIn.read();
+            if(m_bumper.data[0] == true || m_bumper.data[1] == true || m_bumper.data[2] == true){
+                m_targetVelocity.data.vx = 0.0;
+                m_targetVelocity.data.vy = 0.0;
+                m_targetVelocity.data.va = 0.0;
+
+                m_step = 2;
+                std::cout <<"衝突検知" << std::endl;
+            }
+            else {
+                m_targetVelocity.data.vx = 0.2;
+                m_targetVelocity.data.vy = 0.0;
+                m_targetVelocity.data.va = 0.0;
+            }
         m_targetVelocityOut.write();
+        }
+        break;
+
+    case 2:
+        break;
+
     }
+
 
 
   return RTC::RTC_OK;
