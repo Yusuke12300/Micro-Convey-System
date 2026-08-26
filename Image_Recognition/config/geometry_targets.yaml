@@ -6,54 +6,92 @@ output_frame: arm
 detector:
   roi_xyxy: [0, 0, 0, 0]
   plane_sample_stride: 3
-  plane_ransac_iterations: 120
-  plane_distance_threshold_m: 0.007
-  min_plane_inlier_ratio: 0.45
+  plane_ransac_iterations: 150
+  plane_distance_threshold_m: 0.006
+  # A lower inlier ratio tolerates the foreshortening and larger foreground
+  # area that occur when the work surface is viewed obliquely.
+  min_plane_inlier_ratio: 0.35
   # The known target is 33 mm high. This band rejects shallow depth noise and
   # taller MyCobot links while leaving margin for reflection-related holes.
-  object_min_height_m: 0.015
-  object_max_height_m: 0.070
-  min_component_area_px: 80
+  object_min_height_m: 0.010
+  object_max_height_m: 0.085
+  min_component_area_px: 50
+  # Keep the upper bound tight so a MyCobot link is still rejected.
   max_component_area_px: 2500
   morphology_kernel_px: 3
-  dimension_abs_tolerance_mm: 6.0
-  dimension_relative_tolerance: 0.25
-  min_rectangularity: 0.65
+  dimension_abs_tolerance_mm: 8.0
+  dimension_relative_tolerance: 0.35
+  # A cuboid becomes a trapezoid/hexagonal silhouette in an oblique view.
+  min_rectangularity: 0.45
   # Five detections must form a position cluster within this radius. A moving
   # robot link or a one-frame reflection is therefore not published.
-  stable_cluster_radius_m: 0.012
+  stable_cluster_radius_m: 0.020
   # Candidate boundaries must be supported by both color and depth edges.
-  color_canny_low_threshold: 40
-  color_canny_high_threshold: 120
-  depth_edge_threshold_m: 0.010
-  edge_search_radius_px: 2
-  min_color_edge_ratio: 0.08
-  min_depth_edge_ratio: 0.08
-  edge_confidence_weight: 0.20
+  color_canny_low_threshold: 60
+  color_canny_high_threshold: 180
+  depth_edge_threshold_m: 0.012
+  edge_search_radius_px: 3
+  min_color_edge_ratio: 0.04
+  min_depth_edge_ratio: 0.04
+  edge_confidence_weight: 0.10
 
 # dimensions_mm order is [width, length, height]. Matching is orientation-free.
 targets:
   "[T1]":
     enabled: true
     dimensions_mm: [15.0, 45.0, 33.0]
-    description: rectangular cuboid
-    # The target top surface is expected around 550 mm from the camera. Hard
-    # rejection range is 470--630 mm; points nearer/farther are ignored.
+    description: black cuboid detected from its largest 45 x 33 mm face
+    visible_face:
+      dimensions_mm: [45.0, 33.0]
+      absolute_tolerance_mm: 8.0
+      relative_tolerance: 0.30
+      confidence_weight: 0.35
+      # At about 45 degrees, side faces enter the same component. Extract only
+      # the largest planar patch before measuring the 45 x 33 mm face.
+      plane_ransac_iterations: 100
+      plane_distance_threshold_m: 0.004
+      min_plane_inlier_ratio: 0.30
+    # The target is expected around 550 mm along the optical Z axis.  The
+    # wider band tolerates a changed optical depth in an oblique view.
     camera_distance:
       expected_m: 0.550
-      tolerance_m: 0.080
-      confidence_weight: 0.15
-    # OpenCV HSV range for a matte white surface. Hue is unrestricted;
-    # white is represented by low saturation and medium-to-high brightness.
+      tolerance_m: 0.200
+      confidence_weight: 0.10
+    # OpenCV HSV range for a matte black surface. Hue and saturation are
+    # unrestricted; black is represented by low brightness (V).
     color:
       enabled: true
-      hsv_lower: [0, 0, 130]
-      hsv_upper: [179, 90, 255]
+      hsv_lower: [0, 0, 0]
+      hsv_upper: [179, 255, 80]
       min_ratio: 0.45
-      confidence_weight: 0.35
+      confidence_weight: 0.25
 
   "[T2]":
-    enabled: false
+    enabled: true
+    dimensions_mm: [15.0, 45.0, 33.0]
+    description: red cuboid detected from its largest 45 x 33 mm face
+    visible_face:
+      dimensions_mm: [45.0, 33.0]
+      absolute_tolerance_mm: 8.0
+      relative_tolerance: 0.30
+      confidence_weight: 0.35
+      plane_ransac_iterations: 100
+      plane_distance_threshold_m: 0.004
+      min_plane_inlier_ratio: 0.30
+    camera_distance:
+      expected_m: 0.550
+      tolerance_m: 0.200
+      confidence_weight: 0.10
+    # Red wraps around the OpenCV hue boundary, so both hue bands are ORed.
+    color:
+      enabled: true
+      hsv_ranges:
+        - lower: [0, 100, 70]
+          upper: [12, 255, 255]
+        - lower: [168, 100, 70]
+          upper: [179, 255, 255]
+      min_ratio: 0.35
+      confidence_weight: 0.40
 
   "[T3]":
     enabled: false

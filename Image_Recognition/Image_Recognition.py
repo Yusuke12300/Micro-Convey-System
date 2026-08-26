@@ -43,6 +43,7 @@ LOGGER = logging.getLogger("Image_Recognition")
 COMPONENT_DIR = Path(__file__).resolve().parent
 GEOMETRY_CONFIG_FILE = "config/geometry_targets.yaml"
 REQUEST_TIMEOUT_SEC = 4.0
+TEMPORAL_FILTER_WARMUP_FRAMES = 3
 PREVIEW_WINDOW_NAME = "Image_Recognition - RealSense"
 PREVIEW_OVERLAY_DURATION_SEC = 5.0
 
@@ -77,11 +78,11 @@ image_recognition_spec = ["implementation_id", "Image_Recognition",
          "conf.default.camera_fps", "30",
          "conf.default.buffer_size", "8",
          "conf.default.min_detection_count", "5",
-         "conf.default.confidence_threshold", "0.65",
+         "conf.default.confidence_threshold", "0.60",
          "conf.default.detection_window_sec", "1.0",
          "conf.default.depth_roi_radius", "2",
-         "conf.default.min_depth_m", "0.4",
-         "conf.default.max_depth_m", "0.7",
+         "conf.default.min_depth_m", "0.3",
+         "conf.default.max_depth_m", "0.9",
          "conf.default.arm_camera_transform_file", "config/T_arm_camera.yaml",
 
          "conf.__widget__.camera_serial", "text",
@@ -206,9 +207,9 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         """
         
          - Name:  confidence_threshold
-         - DefaultValue: 0.65
+         - DefaultValue: 0.60
         """
-        self._confidence_threshold = [0.65]
+        self._confidence_threshold = [0.60]
         """
         
          - Name:  detection_window_sec
@@ -224,15 +225,15 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         """
         
          - Name:  min_depth_m
-         - DefaultValue: 0.4
+         - DefaultValue: 0.3
         """
-        self._min_depth_m = [0.4]
+        self._min_depth_m = [0.3]
         """
         
          - Name:  max_depth_m
-         - DefaultValue: 0.7
+         - DefaultValue: 0.9
         """
-        self._max_depth_m = [0.7]
+        self._max_depth_m = [0.9]
         """
         
          - Name:  arm_camera_transform_file
@@ -252,6 +253,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._hole_filling_filter = None
         self._depth_to_disparity = None
         self._disparity_to_depth = None
+        self._filter_warmup_frames_remaining = 0
         self._cv2 = None
         self._preview_available = False
         self._preview_error_logged = False
@@ -290,11 +292,11 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self.bindParameter("camera_fps", self._camera_fps, "30")
         self.bindParameter("buffer_size", self._buffer_size, "8")
         self.bindParameter("min_detection_count", self._min_detection_count, "5")
-        self.bindParameter("confidence_threshold", self._confidence_threshold, "0.65")
+        self.bindParameter("confidence_threshold", self._confidence_threshold, "0.60")
         self.bindParameter("detection_window_sec", self._detection_window_sec, "1.0")
         self.bindParameter("depth_roi_radius", self._depth_roi_radius, "2")
-        self.bindParameter("min_depth_m", self._min_depth_m, "0.4")
-        self.bindParameter("max_depth_m", self._max_depth_m, "0.7")
+        self.bindParameter("min_depth_m", self._min_depth_m, "0.3")
+        self.bindParameter("max_depth_m", self._max_depth_m, "0.9")
         self.bindParameter("arm_camera_transform_file", self._arm_camera_transform_file, "config/T_arm_camera.yaml")
 		
         # Set InPort buffers
@@ -412,10 +414,10 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
             self._depth_scale = float(
                 profile.get_device().first_depth_sensor().get_depth_scale()
             )
-            # Use the 848x480 depth viewport as the reference.  The aligned
-            # color image is resampled to depth rather than reducing the depth
-            # geometry to the 640x480 color viewport.
-            self._align = rs.align(rs.stream.depth)
+            # Keep the native 640x480 RGB image as the reference and align the
+            # depth frame to it.  Resampling RGB into the wider depth viewport
+            # can introduce black invalid pixels and visible speckle noise.
+            self._align = rs.align(rs.stream.color)
             # Glossy or strongly illuminated surfaces may contain small depth
             # holes.  Stabilize them across space and time before geometry and
             # depth-edge processing.  Mode 2 fills from the nearest neighbor,
@@ -521,6 +523,17 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                 ppx=float(rs_intrinsics.ppx),
                 ppy=float(rs_intrinsics.ppy),
             )
+            if (
+                self._active_target_id is not None
+                and self._filter_warmup_frames_remaining > 0
+            ):
+                # Feed a few current frames into the newly-created temporal
+                # filter without judging them.  This prevents previous target
+                # positions and invalid-depth persistence from contaminating
+                # the next recognition request.
+                self._filter_warmup_frames_remaining -= 1
+                self._show_camera_preview(color_image, now)
+                return RTC.RTC_OK
             if self._active_target_id is not None:
                 target_id = self._active_target_id
                 target_definition = self._targets[target_id]
@@ -572,12 +585,25 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                     )
                     LOGGER.info(
                         "%s observed dimensions %.1f x %.1f x %.1f mm, "
-                        "geometry %.3f, rectangularity %.3f, "
+                        "geometry %.3f, visible face %s mm (%s), "
+                        "rectangularity %.3f, "
                         "camera distance %.3f m, color %s, "
                         "color/depth edges %s/%s, combined %.3f",
                         target_id,
                         *detection.observed_dimensions_mm,
                         detection.geometry_confidence,
+                        (
+                            "{:.1f} x {:.1f}".format(
+                                *detection.observed_visible_face_mm
+                            )
+                            if detection.observed_visible_face_mm is not None
+                            else "disabled"
+                        ),
+                        (
+                            "{:.3f}".format(detection.visible_face_confidence)
+                            if detection.visible_face_confidence is not None
+                            else "disabled"
+                        ),
                         detection.rectangularity,
                         detection.camera_distance_m,
                         (
@@ -656,7 +682,19 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._sample_color_ratios = {}
         self._sample_edge_metrics = {}
         self._last_detection_overlay = None
+        self._reset_temporal_filter_history()
         LOGGER.info("Started recognition of %s", self._active_target_id)
+
+    def _reset_temporal_filter_history(self):
+        """Start each request without depth history from an older scene."""
+
+        self._filter_warmup_frames_remaining = TEMPORAL_FILTER_WARMUP_FRAMES
+        if self._rs is not None:
+            self._temporal_filter = self._rs.temporal_filter()
+            LOGGER.debug(
+                "Reset temporal depth history; warming up for %d frames",
+                TEMPORAL_FILTER_WARMUP_FRAMES,
+            )
 
     def _refine_point_with_depth_roi(
         self, depth_frame, intrinsics, estimated_point_camera_m
@@ -811,7 +849,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                 if overlay["color_ratio"] is not None:
                     lines.append(
                         (
-                            "White match: {:.1f}%".format(
+                            "Color match: {:.1f}%".format(
                                 100.0 * overlay["color_ratio"]
                             ),
                             (0, 255, 0),
@@ -933,6 +971,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._sample_bounding_boxes.clear()
         self._sample_color_ratios.clear()
         self._sample_edge_metrics.clear()
+        self._filter_warmup_frames_remaining = 0
 
     def _clear_request_state(self):
         self._pending_target_ids.clear()
@@ -943,6 +982,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._sample_bounding_boxes = {}
         self._sample_color_ratios = {}
         self._sample_edge_metrics = {}
+        self._filter_warmup_frames_remaining = 0
 
     def _stop_camera(self):
         if self._cv2 is not None and self._preview_available:
@@ -965,6 +1005,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._hole_filling_filter = None
         self._depth_to_disparity = None
         self._disparity_to_depth = None
+        self._filter_warmup_frames_remaining = 0
         self._rs = None
         self._cv2 = None
 	

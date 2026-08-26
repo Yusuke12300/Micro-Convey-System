@@ -104,6 +104,7 @@ def _canny_for_test(image, low_threshold, high_threshold):
 
 
 cv2.cvtColor = _convert_color_for_test
+cv2.GaussianBlur = lambda image, kernel_size, sigma: image
 cv2.Canny = _canny_for_test
 cv2.inRange = lambda image, lower, upper: (
     np.all((image >= lower) & (image <= upper), axis=2).astype(np.uint8) * 255
@@ -125,6 +126,7 @@ from geometry_recognition import (  # noqa: E402
     edge_support_ratio,
     fit_plane_ransac,
     load_arm_camera_transform,
+    measure_visible_face,
     normalize_target_id,
     select_best_sample,
     select_stable_best_sample,
@@ -245,6 +247,153 @@ class GeometryRecognitionTests(unittest.TestCase):
         self.assertGreaterEqual(x2, 50)
         self.assertGreaterEqual(y2, 50)
 
+    def test_largest_visible_face_is_accepted_and_narrow_face_is_rejected(self):
+        settings = DetectorSettings(
+            roi_xyxy=(0, 0, 100, 100),
+            plane_sample_stride=2,
+            plane_ransac_iterations=50,
+            plane_distance_threshold_m=0.002,
+            min_plane_inlier_ratio=0.75,
+            object_min_height_m=0.010,
+            object_max_height_m=0.085,
+            min_component_area_px=50,
+            morphology_kernel_px=1,
+            dimension_abs_tolerance_mm=8.0,
+            dimension_relative_tolerance=0.35,
+            min_rectangularity=0.40,
+        )
+        definition = {
+            "enabled": True,
+            "dimensions_mm": [15.0, 45.0, 33.0],
+            "visible_face": {
+                "dimensions_mm": [45.0, 33.0],
+                "absolute_tolerance_mm": 8.0,
+                "relative_tolerance": 0.30,
+                "confidence_weight": 0.35,
+            },
+        }
+        intrinsics = CameraIntrinsics(600.0, 600.0, 49.5, 49.5)
+
+        broad_face_depth = np.ones((100, 100), dtype=np.float32)
+        broad_face_depth[36:64, 40:60] = 0.985
+        detection = detect_target_from_depth(
+            broad_face_depth,
+            intrinsics,
+            "[T1]",
+            definition,
+            settings,
+            0.60,
+            np.random.default_rng(10),
+        )
+        self.assertIsNotNone(detection)
+        self.assertIsNotNone(detection.visible_face_confidence)
+        self.assertAlmostEqual(detection.point_camera_m[2], 0.985, places=2)
+
+        narrow_face_depth = np.ones((100, 100), dtype=np.float32)
+        narrow_face_depth[40:60, 46:55] = 0.955
+        self.assertIsNone(
+            detect_target_from_depth(
+                narrow_face_depth,
+                intrinsics,
+                "[T1]",
+                definition,
+                settings,
+                0.60,
+                np.random.default_rng(11),
+            )
+        )
+
+    def test_synthetic_cuboid_detection_on_inclined_plane(self):
+        height, width = 120, 120
+        intrinsics = CameraIntrinsics(600.0, 600.0, 59.5, 59.5)
+        yy, xx = np.mgrid[0:height, 0:width]
+        rays = np.dstack(
+            (
+                (xx - intrinsics.ppx) / intrinsics.fx,
+                (yy - intrinsics.ppy) / intrinsics.fy,
+                np.ones_like(xx, dtype=np.float64),
+            )
+        )
+        angle = np.deg2rad(45.0)
+        normal = np.asarray([0.0, np.sin(angle), -np.cos(angle)])
+        base_center = np.asarray([0.0, 0.0, 0.55])
+        plane_offset = -float(normal @ base_center)
+        ray_dot_normal = rays @ normal
+        base_depth = -plane_offset / ray_dot_normal
+
+        # Put the cuboid on its largest 45 x 33 mm face, leaving 15 mm as
+        # the height above the inclined work plane.
+        object_height_m = 0.015
+        top_depth = -(plane_offset - object_height_m) / ray_dot_normal
+        top_points = rays * top_depth[..., None]
+        top_center = base_center + object_height_m * normal
+        plane_u = np.asarray([0.0, -np.cos(angle), -np.sin(angle)])
+        plane_v = np.asarray([-1.0, 0.0, 0.0])
+        relative = top_points - top_center
+        object_mask = (
+            (np.abs(relative @ plane_u) <= 0.0225)
+            & (np.abs(relative @ plane_v) <= 0.0165)
+        )
+        depth = base_depth.astype(np.float32)
+        depth[object_mask] = top_depth[object_mask].astype(np.float32)
+
+        settings = DetectorSettings(
+            roi_xyxy=(0, 0, width, height),
+            plane_sample_stride=2,
+            plane_ransac_iterations=80,
+            plane_distance_threshold_m=0.003,
+            min_plane_inlier_ratio=0.70,
+            object_min_height_m=0.010,
+            object_max_height_m=0.085,
+            min_component_area_px=50,
+            morphology_kernel_px=1,
+            dimension_abs_tolerance_mm=8.0,
+            dimension_relative_tolerance=0.35,
+            min_rectangularity=0.40,
+        )
+        detection = detect_target_from_depth(
+            depth,
+            intrinsics,
+            "[T1]",
+            {
+                "enabled": True,
+                "dimensions_mm": [15.0, 45.0, 33.0],
+                "visible_face": {
+                    "dimensions_mm": [45.0, 33.0],
+                    "absolute_tolerance_mm": 8.0,
+                    "relative_tolerance": 0.30,
+                    "confidence_weight": 0.35,
+                },
+            },
+            settings,
+            0.60,
+            np.random.default_rng(7),
+        )
+        self.assertIsNotNone(detection)
+        self.assertGreaterEqual(detection.confidence, 0.60)
+        self.assertAlmostEqual(detection.observed_dimensions_mm[2], 45.0, delta=8.0)
+
+    def test_dominant_visible_face_ignores_smaller_side_plane(self):
+        broad_y, broad_x = np.mgrid[-0.0165:0.0165:15j, -0.0225:0.0225:21j]
+        broad = np.column_stack(
+            (broad_x.ravel(), broad_y.ravel(), np.full(broad_x.size, 0.50))
+        )
+        side_y, side_z = np.mgrid[-0.0165:0.0165:15j, 0.50:0.515:6j]
+        side = np.column_stack(
+            (np.full(side_y.size, 0.0225), side_y.ravel(), side_z.ravel())
+        )
+        measurement = measure_visible_face(
+            np.vstack((broad, side)),
+            np.random.default_rng(12),
+            ransac_iterations=100,
+            distance_threshold_m=0.001,
+            min_inlier_ratio=0.50,
+        )
+        self.assertIsNotNone(measurement)
+        dimensions_mm, center = measurement
+        np.testing.assert_allclose(dimensions_mm, [33.0, 45.0], atol=1.0)
+        np.testing.assert_allclose(center, [0.0, 0.0, 0.50], atol=0.002)
+
     def test_camera_distance_band_rejects_wrong_depth(self):
         depth = np.ones((100, 100), dtype=np.float32)
         depth[36:64, 45:55] = 0.967
@@ -299,7 +448,7 @@ class GeometryRecognitionTests(unittest.TestCase):
             )
         )
 
-    def test_white_color_filter_rejects_non_white_depth_candidate(self):
+    def test_black_t1_accepts_black_on_white_and_rejects_white(self):
         depth = np.ones((100, 100), dtype=np.float32)
         depth[36:64, 45:55] = 0.967
         settings = DetectorSettings(
@@ -327,14 +476,14 @@ class GeometryRecognitionTests(unittest.TestCase):
             "dimensions_mm": [15.0, 45.0, 33.0],
             "color": {
                 "enabled": True,
-                "hsv_lower": [0, 0, 130],
-                "hsv_upper": [179, 90, 255],
+                "hsv_lower": [0, 0, 0],
+                "hsv_upper": [179, 255, 80],
                 "min_ratio": 0.45,
                 "confidence_weight": 0.35,
             },
         }
-        white_object = np.zeros((100, 100, 3), dtype=np.uint8)
-        white_object[36:64, 45:55] = 255
+        black_object = np.full((100, 100, 3), 255, dtype=np.uint8)
+        black_object[36:64, 45:55] = 0
         detection = detect_target_from_depth(
             depth,
             CameraIntrinsics(600.0, 600.0, 49.5, 49.5),
@@ -343,14 +492,14 @@ class GeometryRecognitionTests(unittest.TestCase):
             settings,
             0.6,
             np.random.default_rng(3),
-            color_bgr=white_object,
+            color_bgr=black_object,
         )
         self.assertIsNotNone(detection)
         self.assertGreaterEqual(detection.color_ratio, 0.95)
         self.assertGreater(detection.color_edge_ratio, 0.05)
         self.assertGreater(detection.depth_edge_ratio, 0.05)
 
-        black_object = np.zeros((100, 100, 3), dtype=np.uint8)
+        white_object = np.full((100, 100, 3), 255, dtype=np.uint8)
         self.assertIsNone(
             detect_target_from_depth(
                 depth,
@@ -360,7 +509,66 @@ class GeometryRecognitionTests(unittest.TestCase):
                 settings,
                 0.6,
                 np.random.default_rng(4),
-                color_bgr=black_object,
+                color_bgr=white_object,
+            )
+        )
+
+    def test_red_t2_accepts_red_and_rejects_white(self):
+        depth = np.ones((100, 100), dtype=np.float32)
+        depth[36:64, 45:55] = 0.967
+        settings = DetectorSettings(
+            roi_xyxy=(0, 0, 100, 100),
+            plane_sample_stride=2,
+            plane_ransac_iterations=40,
+            plane_distance_threshold_m=0.002,
+            min_plane_inlier_ratio=0.8,
+            object_min_height_m=0.005,
+            object_max_height_m=0.08,
+            min_component_area_px=20,
+            morphology_kernel_px=1,
+            dimension_abs_tolerance_mm=8.0,
+            dimension_relative_tolerance=0.35,
+        )
+        definition = {
+            "enabled": True,
+            "dimensions_mm": [15.0, 45.0, 33.0],
+            "color": {
+                "enabled": True,
+                "hsv_ranges": [
+                    {"lower": [0, 100, 70], "upper": [12, 255, 255]},
+                    {"lower": [168, 100, 70], "upper": [179, 255, 255]},
+                ],
+                "min_ratio": 0.35,
+                "confidence_weight": 0.40,
+            },
+        }
+        red_object = np.zeros((100, 100, 3), dtype=np.uint8)
+        red_object[36:64, 45:55] = [0, 0, 255]
+        detection = detect_target_from_depth(
+            depth,
+            CameraIntrinsics(600.0, 600.0, 49.5, 49.5),
+            "[T2]",
+            definition,
+            settings,
+            0.6,
+            np.random.default_rng(8),
+            color_bgr=red_object,
+        )
+        self.assertIsNotNone(detection)
+        self.assertGreaterEqual(detection.color_ratio, 0.95)
+
+        white_object = np.zeros((100, 100, 3), dtype=np.uint8)
+        white_object[36:64, 45:55] = 255
+        self.assertIsNone(
+            detect_target_from_depth(
+                depth,
+                CameraIntrinsics(600.0, 600.0, 49.5, 49.5),
+                "[T2]",
+                definition,
+                settings,
+                0.6,
+                np.random.default_rng(9),
+                color_bgr=white_object,
             )
         )
 
@@ -388,18 +596,28 @@ class GeometryRecognitionTests(unittest.TestCase):
                 load_arm_camera_transform(Path("unused.yaml")), np.eye(4)
             )
 
-    def test_configured_top_down_mycobot_transform(self):
-        transform = np.asarray(
-            [
-                [0.0, 1.0, 0.0, 0.2],
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, -1.0, 0.55],
+    def test_configured_vertical_camera_mycobot_transform(self):
+        document = {
+            "calibrated": True,
+            "translation_unit": "m",
+            "T_arm_camera": [
+                [0.0, -1.0, 0.0, -0.30],
+                [-1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, -1.0, 0.47],
                 [0.0, 0.0, 0.0, 1.0],
-            ]
+            ],
+        }
+        with patch("geometry_recognition._load_yaml", return_value=document):
+            transform = load_arm_camera_transform(Path("T_arm_camera.yaml"))
+        np.testing.assert_allclose(
+            camera_to_arm([0.0, 0.0, 0.0], transform),
+            [-0.30, 0.0, 0.47],
+            atol=1e-9,
         )
         np.testing.assert_allclose(
-            camera_to_arm([0.01, 0.02, 0.50], transform),
-            [0.22, 0.01, 0.05],
+            camera_to_arm([0.10, 0.02, 0.40], transform),
+            [-0.32, -0.10, 0.07],
+            atol=1e-9,
         )
 
 
