@@ -304,6 +304,7 @@ class Path_Generation
   // <rtc-template block="private_operation">
   
   // </rtc-template>
+	 int m_step;
 
 };
 
