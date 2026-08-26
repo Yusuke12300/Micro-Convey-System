@@ -1,0 +1,54 @@
+# Dummy_Vision CMake config file
+#
+# This file sets the following variables:
+# Dummy_Vision_FOUND - Always TRUE.
+# Dummy_Vision_INCLUDE_DIRS - Directories containing the Dummy_Vision include files.
+# Dummy_Vision_IDL_DIRS - Directories containing the Dummy_Vision IDL files.
+# Dummy_Vision_LIBRARIES - Libraries needed to use Dummy_Vision.
+# Dummy_Vision_DEFINITIONS - Compiler flags for Dummy_Vision.
+# Dummy_Vision_VERSION - The version of Dummy_Vision found.
+# Dummy_Vision_VERSION_MAJOR - The major version of Dummy_Vision found.
+# Dummy_Vision_VERSION_MINOR - The minor version of Dummy_Vision found.
+# Dummy_Vision_VERSION_REVISION - The revision version of Dummy_Vision found.
+# Dummy_Vision_VERSION_CANDIDATE - The candidate version of Dummy_Vision found.
+
+message(STATUS "Found Dummy_Vision-@PROJECT_VERSION@")
+set(Dummy_Vision_FOUND TRUE)
+
+find_package(<dependency> REQUIRED)
+
+#set(Dummy_Vision_INCLUDE_DIRS
+#    "@CMAKE_INSTALL_PREFIX@/include/@PROJECT_NAME_LOWER@-@PROJECT_VERSION_MAJOR@"
+#    ${<dependency>_INCLUDE_DIRS}
+#    )
+#
+#set(Dummy_Vision_IDL_DIRS
+#    "@CMAKE_INSTALL_PREFIX@/include/@PROJECT_NAME_LOWER@-@PROJECT_VERSION_MAJOR@/idl")
+set(Dummy_Vision_INCLUDE_DIRS
+    "@CMAKE_INSTALL_PREFIX@/include/@CPACK_PACKAGE_FILE_NAME@"
+    ${<dependency>_INCLUDE_DIRS}
+    )
+set(Dummy_Vision_IDL_DIRS
+    "@CMAKE_INSTALL_PREFIX@/include/@CPACK_PACKAGE_FILE_NAME@/idl")
+
+
+if(WIN32)
+    set(Dummy_Vision_LIBRARIES
+        "@CMAKE_INSTALL_PREFIX@/@LIB_INSTALL_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@@PROJECT_NAME_LOWER@@CMAKE_STATIC_LIBRARY_SUFFIX@"
+        ${<dependency>_LIBRARIES}
+        )
+else(WIN32)
+    set(Dummy_Vision_LIBRARIES
+        "@CMAKE_INSTALL_PREFIX@/@LIB_INSTALL_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@@PROJECT_NAME_LOWER@@CMAKE_SHARED_LIBRARY_SUFFIX@"
+        ${<dependency>_LIBRARIES}
+        )
+endif(WIN32)
+
+set(Dummy_Vision_DEFINITIONS ${<dependency>_DEFINITIONS})
+
+set(Dummy_Vision_VERSION @PROJECT_VERSION@)
+set(Dummy_Vision_VERSION_MAJOR @PROJECT_VERSION_MAJOR@)
+set(Dummy_Vision_VERSION_MINOR @PROJECT_VERSION_MINOR@)
+set(Dummy_Vision_VERSION_REVISION @PROJECT_VERSION_REVISION@)
+set(Dummy_Vision_VERSION_CANDIDATE @PROJECT_VERSION_CANDIDATE@)
+
