@@ -126,7 +126,7 @@ RTC::ReturnCode_t Hand_Controller::onActivated(RTC::UniqueId /*ec_id*/)
             << std::endl;
 
   m_JARA_ARM_ManipulatorCommonInterface_Middle
-    ->moveGripper(100);
+    ->moveGripper(90);
 
   std::cout << "[Hand_Controller] Initial gripper opening completed"
             << std::endl;
@@ -180,14 +180,17 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
       else if (current_target_id == "t2")
       {
         // 後で設定
+        gripper_value = 35;
       }
       else if (current_target_id == "t3")
       {
         // 後で設定
+        gripper_value = 67;
       }
       else if (current_target_id == "t4")
       {
         // 後で設定
+        gripper_value = 35;
       }
 
 
