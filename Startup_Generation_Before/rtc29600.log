@@ -1,0 +1,30 @@
+2026-08-27 21:12:56,898 file.manager INFO 2.0.2
+2026-08-27 21:12:56,899 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-27 21:12:56,899 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-27 21:12:56,899 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-27 21:12:56,899 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-27 21:12:56,899 file.manager INFO   All right reserved.
+2026-08-27 21:12:56,899 file.manager INFO Manager starting.
+2026-08-27 21:12:56,899 file.manager INFO Starting local logging.
+2026-08-27 21:12:56,910 file.manager.namingmanager INFO NameServer connection succeeded: corba/localhost
+2026-08-27 21:13:00,997 file.ManagerServant INFO Master manager not found
+2026-08-27 21:13:00,998 file.LocalServiceAdmin INFO All the local services are enabled.
+2026-08-27 21:13:01,006 file.manager INFO Component type conf file: Startup_Generation_Before.conf loaded.
+2026-08-27 21:13:01,009 file.ec_base INFO setRate(1000000.000000) done
+2026-08-27 21:13:01,009 file.ec_base INFO setRate(1000.000000) done
+2026-08-27 21:13:01,010 file.rtobject INFO 1 execution context was created.
+2026-08-27 21:13:01,016 file.rtobject INFO Initial active configuration set is default.
+2026-08-27 21:13:15,171 file.ManagerServant INFO Master manager not found
+2026-08-27 21:13:25,260 file.ManagerServant INFO Master manager not found
+2026-08-27 21:13:35,272 file.ManagerServant INFO Master manager not found
+2026-08-27 21:13:45,257 file.ManagerServant INFO Master manager not found
+2026-08-27 21:13:55,353 file.ManagerServant INFO Master manager not found
+2026-08-27 21:14:05,420 file.ManagerServant INFO Master manager not found
+2026-08-27 21:14:15,552 file.ManagerServant INFO Master manager not found
+2026-08-27 21:14:25,583 file.ManagerServant INFO Master manager not found
+2026-08-27 21:14:35,568 file.ManagerServant INFO Master manager not found
+2026-08-27 21:14:45,600 file.ManagerServant INFO Master manager not found
+2026-08-27 21:14:55,655 file.ManagerServant INFO Master manager not found
+2026-08-27 21:15:05,683 file.ManagerServant INFO Master manager not found
+2026-08-27 21:15:15,785 file.ManagerServant INFO Master manager not found
+2026-08-27 21:15:25,883 file.ManagerServant INFO Master manager not found
