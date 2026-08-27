@@ -116,8 +116,8 @@ RTC::ReturnCode_t Startup_Generation_After::onActivated(RTC::UniqueId /*ec_id*/)
 
     RTC::Pose3D pose1;
     pose1.position.x = 0.0;
-    pose1.position.y = 0.0;
-    pose1.position.z = 0.35;
+    pose1.position.y = -0.2;
+    pose1.position.z = 0.2;
 
     pose1.orientation.r = 0.0;
     pose1.orientation.p = 0.0;
