@@ -43,7 +43,8 @@ Startup_Generation_After::Startup_Generation_After(RTC::Manager* manager)
     m_endcmd_from_ArmControllerIn("endcmd_from_ArmController", m_endcmd_from_ArmController),
     m_endcmd_from_HandControllerIn("endcmd_from_HandController", m_endcmd_from_HandController),
     m_endcmdOut("endcmd", m_endcmd),
-    m_target_poseOut("target_pose", m_target_pose)
+    m_target_poseOut("target_pose", m_target_pose),
+    m_endcmd_to_HandControllerOut("endcmd_to_HandController", m_endcmd_to_HandController)
     // </rtc-template>
 {
 }
@@ -68,6 +69,7 @@ RTC::ReturnCode_t Startup_Generation_After::onInitialize()
   // Set OutPort buffer
   addOutPort("endcmd", m_endcmdOut);
   addOutPort("target_pose", m_target_poseOut);
+  addOutPort("endcmd_to_HandController", m_endcmd_to_HandControllerOut);
 
   
   // Set service provider to Ports
@@ -108,13 +110,14 @@ RTC::ReturnCode_t Startup_Generation_After::onActivated(RTC::UniqueId /*ec_id*/)
 {
     m_step = 0;
     m_endcmd.data = false;
+    m_endcmd_to_HandController.data = false;
 
     m_target_list.clear();
 
     RTC::Pose3D pose1;
-    pose1.position.x = 0.0;
+    pose1.position.x = 0.2;
     pose1.position.y = 0.0;
-    pose1.position.z = 0.0;
+    pose1.position.z = 0.24;
 
     pose1.orientation.r = 0.0;
     pose1.orientation.p = 0.0;
@@ -123,7 +126,7 @@ RTC::ReturnCode_t Startup_Generation_After::onActivated(RTC::UniqueId /*ec_id*/)
 
     RTC::Pose3D pose2;
     pose2.position.x = 0.1;
-    pose2.position.y = 0.1;
+    pose2.position.y = 0.0;
     pose2.position.z = 0.1;
 
     pose2.orientation.r = 0.0;
@@ -154,7 +157,7 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
                 m_target_poseOut.write();
 
                 m_step = 1;
-                std::cout << "ハンドコンポーネントからの完了通知を取得" << std::endl;
+                std::cout << "ハンドコンポーネントからの把持完了通知を取得" << std::endl;
                 std::cout << "第一座標を送信" << std::endl;
             }
         }
@@ -182,6 +185,23 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
             m_endcmd_from_ArmControllerIn.read();
 
             if (m_endcmd_from_ArmController.data == true) {
+                std::cout << "アームコンポーネントからの完了通知を受信" << std::endl;
+                m_endcmd_to_HandController.data = true;
+                setTimestamp(m_endcmd_to_HandController);
+                m_endcmd_to_HandControllerOut.write();
+
+                m_step = 3;
+            }
+        }
+        break;
+
+    case 3:
+        if (m_endcmd_from_HandControllerIn.isNew()) {
+            m_endcmd_from_HandControllerIn.read();
+
+            if (m_endcmd_from_HandController.data == true) {
+                std::cout << "ハンドコンポーネントからの開放完了通知を受信" << std::endl;
+
                 m_endcmd.data = true;
                 setTimestamp(m_endcmd); // 完了通知にも現在時刻を付与
                 m_endcmdOut.write();
@@ -192,6 +212,10 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
         }
         break;
     }
+
+
+
+
 
     return RTC::RTC_OK;
 }

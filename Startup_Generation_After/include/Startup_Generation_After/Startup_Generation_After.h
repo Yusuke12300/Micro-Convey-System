@@ -270,6 +270,9 @@ class Startup_Generation_After
   // <rtc-template block="consumer_declare">
   
   // </rtc-template>
+  RTC::TimedBoolean m_endcmd_to_HandController;
+  RTC::OutPort<RTC::TimedBoolean>m_endcmd_to_HandControllerOut;
+  
 
 
  private:
