@@ -1,0 +1,19 @@
+# Transform from the RealSense depth optical frame to the MyCobot base frame.
+# Vertical mounting shown in the measured side-view diagram:
+#   camera origin in arm coordinates = (-0.30, 0.0, 0.47) m
+#   camera +Y points in the arm -X direction
+#   camera +Z (optical axis) points vertically down, in the arm -Z direction
+#   camera +X points opposite to arm +Y (right-handed coordinate systems)
+# Therefore:
+#   x_arm = -y_camera - 0.30
+#   y_arm = -x_camera
+#   z_arm = 0.47 - z_camera
+calibrated: true
+from_frame: camera_depth_optical
+to_frame: arm_base
+translation_unit: m
+T_arm_camera:
+  - [0.0, -1.0, 0.0, -0.30]
+  - [-1.0, 0.0, 0.0, 0.0]
+  - [0.0, 0.0, -1.0, 0.47]
+  - [0.0, 0.0, 0.0, 1.0]

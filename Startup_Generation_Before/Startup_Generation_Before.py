@@ -213,7 +213,7 @@ class Startup_Generation_Before(OpenRTM_aist.DataFlowComponentBase):
                     # 座標を保存
                     self.target_x = data.data.x
                     self.target_y = data.data.y
-                    self.target_z = data.data.z + 0.085 # Zにアームの先端からハンドの高さを足す
+                    self.target_z = data.data.z + 0.07 # Zにアームの先端からハンドの高さを足す
                     print(f"ターゲット受信: X={self.target_x}, Y={self.target_y}, Z={self.target_z}")
 
                     # --- 型変換 ＆ 送信（アプローチ点） ---
