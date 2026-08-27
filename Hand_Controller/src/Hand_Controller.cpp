@@ -175,22 +175,22 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
       // 対象物IDごとの把持開度
       if (current_target_id == "t1")
       {
-        gripper_value = 67;
+        gripper_value = 35;
       }
       else if (current_target_id == "t2")
       {
         // 後で設定
-        gripper_value = 35;
+        gripper_value = 67;
       }
       else if (current_target_id == "t3")
       {
         // 後で設定
-        gripper_value = 67;
+        gripper_value = 35;
       }
       else if (current_target_id == "t4")
       {
         // 後で設定
-        gripper_value = 35;
+        gripper_value = 67;
       }
 
 
