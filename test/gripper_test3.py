@@ -1,7 +1,7 @@
 from pymycobot import MyCobot280
 import time
 
-PORT = "/dev/ttyUSB0"
+PORT = "/dev/ttyACM0"
 BAUDRATE = 115200
 
 SPEED = 80
@@ -49,15 +49,19 @@ while True:
 
         print("return =", ret)
 
-        # 動作完了まで少し待つ
+        # 動作を待つ
         time.sleep(2)
 
-        # 実際のグリッパ値を取得
-        actual_value = mc.get_gripper_value(GRIPPER_TYPE)
+        # 実際の開度を取得
+        actual = mc.get_gripper_value(GRIPPER_TYPE)
 
-        print("actual value =", actual_value)
-        print("moving =", mc.is_gripper_moving())
+        print("actual =", actual)
+
+        # 動作中か確認
+        moving = mc.is_gripper_moving()
+
+        print("moving =", moving)
         print("--------------------------------")
 
     except ValueError:
-        print("0～100の数値、または q を入力してください")
+        print("数字または q を入力してください")

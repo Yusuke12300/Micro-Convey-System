@@ -1,0 +1,56 @@
+2026-08-27 19:46:10,543 file.manager INFO 2.0.2
+2026-08-27 19:46:10,544 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-27 19:46:10,544 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-27 19:46:10,544 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-27 19:46:10,544 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-27 19:46:10,544 file.manager INFO   All right reserved.
+2026-08-27 19:46:10,544 file.manager INFO Manager starting.
+2026-08-27 19:46:10,544 file.manager INFO Starting local logging.
+2026-08-27 19:46:14,649 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:46:18,712 file.ManagerServant INFO Master manager not found
+2026-08-27 19:46:18,713 file.LocalServiceAdmin INFO All the local services are enabled.
+2026-08-27 19:46:18,713 file.manager INFO Component type conf file: Select_Target.conf loaded.
+2026-08-27 19:46:18,713 file.ec_base INFO setRate(1000000.000000) done
+2026-08-27 19:46:18,713 file.ec_base INFO setRate(1000.000000) done
+2026-08-27 19:46:18,713 file.rtobject INFO 1 execution context was created.
+2026-08-27 19:46:18,726 file.rtobject INFO Initial active configuration set is default.
+2026-08-27 19:46:32,946 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:46:37,028 file.ManagerServant INFO Master manager not found
+2026-08-27 19:46:42,942 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:46:47,041 file.ManagerServant INFO Master manager not found
+2026-08-27 19:46:52,960 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:46:57,060 file.ManagerServant INFO Master manager not found
+2026-08-27 19:47:02,976 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:47:07,077 file.ManagerServant INFO Master manager not found
+2026-08-27 19:47:13,094 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:47:17,194 file.ManagerServant INFO Master manager not found
+2026-08-27 19:47:23,093 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:47:27,160 file.ManagerServant INFO Master manager not found
+2026-08-27 19:47:33,226 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:47:37,309 file.ManagerServant INFO Master manager not found
+2026-08-27 19:47:43,178 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:47:47,275 file.ManagerServant INFO Master manager not found
+2026-08-27 19:47:53,309 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:47:57,408 file.ManagerServant INFO Master manager not found
+2026-08-27 19:48:03,309 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:48:07,410 file.ManagerServant INFO Master manager not found
+2026-08-27 19:48:13,326 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:48:17,424 file.ManagerServant INFO Master manager not found
+2026-08-27 19:48:23,415 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:48:27,481 file.ManagerServant INFO Master manager not found
+2026-08-27 19:48:33,504 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:48:37,608 file.ManagerServant INFO Master manager not found
+2026-08-27 19:48:43,567 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:48:47,611 file.ManagerServant INFO Master manager not found
+2026-08-27 19:48:53,625 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:48:57,706 file.ManagerServant INFO Master manager not found
+2026-08-27 19:49:03,691 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:49:07,742 file.ManagerServant INFO Master manager not found
+2026-08-27 19:49:13,758 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:49:17,839 file.ManagerServant INFO Master manager not found
+2026-08-27 19:49:23,843 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
+2026-08-27 19:49:27,942 file.ManagerServant INFO Master manager not found
+2026-08-27 19:49:30,877 file.manager.namingmanager INFO NameServer connection succeeded: corba/localhost
+2026-08-27 19:49:30,878 file.manager.namingmanager INFO Connected to a name server: corba/localhost
+2026-08-27 19:49:34,936 file.ManagerServant INFO Master manager not found
+2026-08-27 19:49:43,922 file.ManagerServant INFO Master manager not found
