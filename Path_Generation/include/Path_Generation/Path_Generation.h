@@ -295,6 +295,9 @@ class Path_Generation
   
   // </rtc-template>
 
+  RTC::TimedPose2D m_currentPose;
+  RTC::InPort<RTC::TimedPose2D> m_currentPoseIn;
+
 
  private:
   // <rtc-template block="private_attribute">
