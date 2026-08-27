@@ -1,0 +1,37 @@
+2026-08-26 13:31:29,175 file.manager INFO 2.1.0
+2026-08-26 13:31:29,175 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-26 13:31:29,176 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-26 13:31:29,176 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-26 13:31:29,177 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-26 13:31:29,177 file.manager INFO   All right reserved.
+2026-08-26 13:31:29,177 file.manager INFO Manager starting.
+2026-08-26 13:31:29,177 file.manager INFO Starting local logging.
+2026-08-26 13:31:29,197 file.manager.namingmanager INFO NameServer connection succeeded: corba/localhost
+2026-08-26 13:31:33,337 file.ManagerServant INFO Master manager not found
+2026-08-26 13:31:33,339 file.LocalServiceAdmin INFO All the local services are enabled.
+2026-08-26 13:31:33,410 file.manager INFO Component type conf file: Image_Recognition.conf loaded.
+2026-08-26 13:31:33,412 file.ec_base INFO setRate(1000000.000000) done
+2026-08-26 13:31:33,412 file.ec_base INFO setRate(10.000000) done
+2026-08-26 13:31:33,413 file.rtobject INFO 1 execution context was created.
+2026-08-26 13:31:33,418 file.rtobject INFO Initial active configuration set is default.
+2026-08-26 13:31:47,588 file.ManagerServant INFO Master manager not found
+2026-08-26 13:31:57,659 file.ManagerServant INFO Master manager not found
+2026-08-26 13:32:18,716 file.ec_base WARNING The component is not responding.
+2026-08-26 13:32:18,718 file.ec_base ERROR Unknown error: Invalid state transition.
+2026-08-26 13:32:22,780 file.ManagerServant INFO Master manager not found
+2026-08-26 13:32:32,890 file.ManagerServant INFO Master manager not found
+2026-08-26 13:32:42,916 file.ManagerServant INFO Master manager not found
+2026-08-26 13:32:52,912 file.ManagerServant INFO Master manager not found
+2026-08-26 13:33:03,034 file.ManagerServant INFO Master manager not found
+2026-08-26 13:33:13,044 file.ManagerServant INFO Master manager not found
+2026-08-26 13:33:23,132 file.ManagerServant INFO Master manager not found
+2026-08-26 13:33:33,253 file.ManagerServant INFO Master manager not found
+2026-08-26 13:33:43,280 file.ManagerServant INFO Master manager not found
+2026-08-26 13:33:53,301 file.ManagerServant INFO Master manager not found
+2026-08-26 13:34:03,392 file.ManagerServant INFO Master manager not found
+2026-08-26 13:34:13,475 file.ManagerServant INFO Master manager not found
+2026-08-26 13:34:23,466 file.ManagerServant INFO Master manager not found
+2026-08-26 13:34:33,508 file.ManagerServant INFO Master manager not found
+2026-08-26 13:34:43,587 file.ManagerServant INFO Master manager not found
+2026-08-26 13:34:45,266 file.ec_base ERROR The component is not responding.
+2026-08-26 13:34:45,266 file.ec_base ERROR Unknown error: Invalid state transition.

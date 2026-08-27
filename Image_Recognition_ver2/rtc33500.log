@@ -1,0 +1,90 @@
+2026-08-26 13:14:47,985 file.manager INFO 2.1.0
+2026-08-26 13:14:47,985 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-26 13:14:47,985 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-26 13:14:47,986 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-26 13:14:47,986 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-26 13:14:47,986 file.manager INFO   All right reserved.
+2026-08-26 13:14:47,987 file.manager INFO Manager starting.
+2026-08-26 13:14:47,987 file.manager INFO Starting local logging.
+2026-08-26 13:14:48,004 file.manager.namingmanager INFO NameServer connection succeeded: corba/localhost
+2026-08-26 13:14:52,100 file.ManagerServant INFO Master manager not found
+2026-08-26 13:14:52,100 file.LocalServiceAdmin INFO All the local services are enabled.
+2026-08-26 13:14:52,152 file.manager INFO Component type conf file: Image_Recognition.conf loaded.
+2026-08-26 13:14:52,154 file.ec_base INFO setRate(1000000.000000) done
+2026-08-26 13:14:52,154 file.ec_base INFO setRate(10.000000) done
+2026-08-26 13:14:52,155 file.rtobject INFO 1 execution context was created.
+2026-08-26 13:14:52,158 file.rtobject INFO Initial active configuration set is default.
+2026-08-26 13:15:06,343 file.ManagerServant INFO Master manager not found
+2026-08-26 13:15:16,390 file.ManagerServant INFO Master manager not found
+2026-08-26 13:15:26,402 file.ManagerServant INFO Master manager not found
+2026-08-26 13:15:36,415 file.ManagerServant INFO Master manager not found
+2026-08-26 13:15:46,439 file.ManagerServant INFO Master manager not found
+2026-08-26 13:15:56,476 file.ManagerServant INFO Master manager not found
+2026-08-26 13:16:06,486 file.ManagerServant INFO Master manager not found
+2026-08-26 13:16:16,517 file.ManagerServant INFO Master manager not found
+2026-08-26 13:16:22,197 file.ec_base WARNING The component is not responding.
+2026-08-26 13:16:22,203 file.ec_base ERROR Unknown error: Invalid state transition.
+2026-08-26 13:16:26,598 file.ManagerServant INFO Master manager not found
+2026-08-26 13:16:36,607 file.ManagerServant INFO Master manager not found
+2026-08-26 13:16:46,605 file.ManagerServant INFO Master manager not found
+2026-08-26 13:16:56,730 file.ManagerServant INFO Master manager not found
+2026-08-26 13:17:06,727 file.ManagerServant INFO Master manager not found
+2026-08-26 13:17:16,854 file.ManagerServant INFO Master manager not found
+2026-08-26 13:17:26,827 file.ManagerServant INFO Master manager not found
+2026-08-26 13:17:36,909 file.ManagerServant INFO Master manager not found
+2026-08-26 13:17:47,035 file.ManagerServant INFO Master manager not found
+2026-08-26 13:17:57,070 file.ManagerServant INFO Master manager not found
+2026-08-26 13:18:07,104 file.ManagerServant INFO Master manager not found
+2026-08-26 13:18:17,118 file.ManagerServant INFO Master manager not found
+2026-08-26 13:18:27,115 file.ManagerServant INFO Master manager not found
+2026-08-26 13:18:37,216 file.ManagerServant INFO Master manager not found
+2026-08-26 13:18:47,229 file.ManagerServant INFO Master manager not found
+2026-08-26 13:18:57,351 file.ManagerServant INFO Master manager not found
+2026-08-26 13:19:07,361 file.ManagerServant INFO Master manager not found
+2026-08-26 13:19:17,344 file.ManagerServant INFO Master manager not found
+2026-08-26 13:19:27,447 file.ManagerServant INFO Master manager not found
+2026-08-26 13:19:37,459 file.ManagerServant INFO Master manager not found
+2026-08-26 13:19:47,462 file.ManagerServant INFO Master manager not found
+2026-08-26 13:19:57,442 file.ManagerServant INFO Master manager not found
+2026-08-26 13:20:07,575 file.ManagerServant INFO Master manager not found
+2026-08-26 13:20:17,602 file.ManagerServant INFO Master manager not found
+2026-08-26 13:20:27,591 file.ManagerServant INFO Master manager not found
+2026-08-26 13:20:37,697 file.ManagerServant INFO Master manager not found
+2026-08-26 13:20:47,730 file.ManagerServant INFO Master manager not found
+2026-08-26 13:20:50,661 file.ec_base ERROR The component is not responding.
+2026-08-26 13:20:50,661 file.ec_base ERROR Unknown error: Invalid state transition.
+2026-08-26 13:20:57,737 file.ManagerServant INFO Master manager not found
+2026-08-26 13:21:07,778 file.ManagerServant INFO Master manager not found
+2026-08-26 13:21:17,833 file.ManagerServant INFO Master manager not found
+2026-08-26 13:21:27,902 file.ManagerServant INFO Master manager not found
+2026-08-26 13:21:37,937 file.ManagerServant INFO Master manager not found
+2026-08-26 13:21:48,002 file.ManagerServant INFO Master manager not found
+2026-08-26 13:21:58,065 file.ManagerServant INFO Master manager not found
+2026-08-26 13:22:08,091 file.ManagerServant INFO Master manager not found
+2026-08-26 13:22:18,129 file.ManagerServant INFO Master manager not found
+2026-08-26 13:22:28,174 file.ManagerServant INFO Master manager not found
+2026-08-26 13:22:38,233 file.ManagerServant INFO Master manager not found
+2026-08-26 13:22:48,286 file.ManagerServant INFO Master manager not found
+2026-08-26 13:22:58,327 file.ManagerServant INFO Master manager not found
+2026-08-26 13:23:08,389 file.ManagerServant INFO Master manager not found
+2026-08-26 13:23:18,367 file.ManagerServant INFO Master manager not found
+2026-08-26 13:23:28,413 file.ManagerServant INFO Master manager not found
+2026-08-26 13:23:38,441 file.ManagerServant INFO Master manager not found
+2026-08-26 13:23:48,492 file.ManagerServant INFO Master manager not found
+2026-08-26 13:23:58,565 file.ManagerServant INFO Master manager not found
+2026-08-26 13:24:08,602 file.ManagerServant INFO Master manager not found
+2026-08-26 13:24:18,630 file.ManagerServant INFO Master manager not found
+2026-08-26 13:24:28,654 file.ManagerServant INFO Master manager not found
+2026-08-26 13:24:38,700 file.ManagerServant INFO Master manager not found
+2026-08-26 13:24:48,757 file.ManagerServant INFO Master manager not found
+2026-08-26 13:24:58,816 file.ManagerServant INFO Master manager not found
+2026-08-26 13:25:08,858 file.ManagerServant INFO Master manager not found
+2026-08-26 13:25:18,887 file.ManagerServant INFO Master manager not found
+2026-08-26 13:25:28,900 file.ManagerServant INFO Master manager not found
+2026-08-26 13:25:38,980 file.ManagerServant INFO Master manager not found
+2026-08-26 13:25:49,025 file.ManagerServant INFO Master manager not found
+2026-08-26 13:25:59,098 file.ManagerServant INFO Master manager not found
+2026-08-26 13:26:09,156 file.ManagerServant INFO Master manager not found
+2026-08-26 13:26:19,206 file.ManagerServant INFO Master manager not found
+2026-08-26 13:26:29,259 file.ManagerServant INFO Master manager not found
+2026-08-26 13:26:39,264 file.ManagerServant INFO Master manager not found
