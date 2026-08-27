@@ -135,7 +135,10 @@ RTC::ReturnCode_t Arm_Controller::onDeactivated(RTC::UniqueId /*ec_id*/)
 
 RTC::ReturnCode_t Arm_Controller::onExecute(RTC::UniqueId /*ec_id*/)
 {
-  // Active後に初期化が完了するまで繰り返し試す
+  // ==========================================
+  // Active後の初期化処理
+  // servoON → goHome
+  // ==========================================
   if (!arm_initialized)
   {
     try
@@ -182,20 +185,33 @@ RTC::ReturnCode_t Arm_Controller::onExecute(RTC::UniqueId /*ec_id*/)
     }
   }
 
-  // target_pose_before に新しい目標値が届いたか確認
+
+  // ==========================================
+  // 把持前の目標位置
+  // target_pose_before
+  // ==========================================
   if (m_target_pose_beforeIn.isNew())
   {
     // InPortからデータを読み込む
     m_target_pose_beforeIn.read();
 
     // 受信した目標位置を表示
-    std::cout << "[Arm_Controller] target_pose_before received" << std::endl;
+    std::cout
+      << "[Arm_Controller] target_pose_before received"
+      << std::endl;
+
     std::cout << "x = "
-              << m_target_pose_before.data.position.x << std::endl;
+              << m_target_pose_before.data.position.x
+              << std::endl;
+
     std::cout << "y = "
-              << m_target_pose_before.data.position.y << std::endl;
+              << m_target_pose_before.data.position.y
+              << std::endl;
+
     std::cout << "z = "
-              << m_target_pose_before.data.position.z << std::endl;
+              << m_target_pose_before.data.position.z
+              << std::endl;
+
 
     // myCobot用の位置姿勢データ
     JARA_ARM::CarPosWithElbow pose;
@@ -213,31 +229,137 @@ RTC::ReturnCode_t Arm_Controller::onExecute(RTC::UniqueId /*ec_id*/)
     pose.carPos[2][1] = 0;
     pose.carPos[2][2] = -1;
 
-    // target_pose_before の位置をmyCobotの目標位置へ設定
-    pose.carPos[0][3] = m_target_pose_before.data.position.x;
 
-    pose.carPos[1][3] = m_target_pose_before.data.position.y;
+    // target_pose_before の位置を設定
+    pose.carPos[0][3] =
+      m_target_pose_before.data.position.x;
 
-    pose.carPos[2][3] = m_target_pose_before.data.position.z;
+    pose.carPos[1][3] =
+      m_target_pose_before.data.position.y;
+
+    pose.carPos[2][3] =
+      m_target_pose_before.data.position.z;
 
     pose.elbow = 0;
     pose.structFlag = 0;
 
-    std::cout << "[Arm_Controller] Move start" << std::endl;
 
-    // 目標位置へ移動
-    // 移動完了までこの関数から戻らない
-    m_JARA_ARM_ManipulatorCommonInterface_Middle->moveLinearCartesianAbs(pose);
+    std::cout
+      << "[Arm_Controller] BEFORE Move start"
+      << std::endl;
 
-    std::cout << "[Arm_Controller] Move completed" << std::endl;
 
-    // 軌道生成RTCへ移動完了を通知
+    // ==========================================
+    // 把持前位置へ移動
+    // ==========================================
+    m_JARA_ARM_ManipulatorCommonInterface_Middle
+      ->moveLinearCartesianAbs(pose);
+
+
+    std::cout
+      << "[Arm_Controller] BEFORE Move completed"
+      << std::endl;
+
+
+    // ==========================================
+    // 把持前移動完了通知
+    // ==========================================
     m_arm_endcmd_before.data = true;
     m_arm_endcmd_beforeOut.write();
 
-    std::cout << "[Arm_Controller] arm_endcmd_before sent"
-              << std::endl;
+    std::cout
+      << "[Arm_Controller] arm_endcmd_before sent"
+      << std::endl;
   }
+
+
+  // ==========================================
+  // 把持後の目標位置
+  // target_pose_after
+  // ==========================================
+  if (m_target_pose_afterIn.isNew())
+  {
+    // InPortからデータを読み込む
+    m_target_pose_afterIn.read();
+
+    // 受信した目標位置を表示
+    std::cout
+      << "[Arm_Controller] target_pose_after received"
+      << std::endl;
+
+    std::cout << "x = "
+              << m_target_pose_after.data.position.x
+              << std::endl;
+
+    std::cout << "y = "
+              << m_target_pose_after.data.position.y
+              << std::endl;
+
+    std::cout << "z = "
+              << m_target_pose_after.data.position.z
+              << std::endl;
+
+
+    // myCobot用の位置姿勢データ
+    JARA_ARM::CarPosWithElbow pose;
+
+    // 姿勢は把持前と同じ固定姿勢
+    pose.carPos[0][0] = -0.7071;
+    pose.carPos[0][1] = -0.7071;
+    pose.carPos[0][2] = 0;
+
+    pose.carPos[1][0] = -0.7071;
+    pose.carPos[1][1] = 0.7071;
+    pose.carPos[1][2] = 0;
+
+    pose.carPos[2][0] = 0;
+    pose.carPos[2][1] = 0;
+    pose.carPos[2][2] = -1;
+
+
+    // target_pose_after の位置を設定
+    pose.carPos[0][3] =
+      m_target_pose_after.data.position.x;
+
+    pose.carPos[1][3] =
+      m_target_pose_after.data.position.y;
+
+    pose.carPos[2][3] =
+      m_target_pose_after.data.position.z;
+
+    pose.elbow = 0;
+    pose.structFlag = 0;
+
+
+    std::cout
+      << "[Arm_Controller] AFTER Move start"
+      << std::endl;
+
+
+    // ==========================================
+    // 把持後位置へ移動
+    // ==========================================
+    m_JARA_ARM_ManipulatorCommonInterface_Middle
+      ->moveLinearCartesianAbs(pose);
+
+
+    std::cout
+      << "[Arm_Controller] AFTER Move completed"
+      << std::endl;
+
+
+    // ==========================================
+    // 把持後移動完了通知
+    // ==========================================
+    m_arm_endcmd_after.data = true;
+    m_arm_endcmd_afterOut.write();
+
+    std::cout
+      << "[Arm_Controller] arm_endcmd_after sent"
+      << std::endl;
+  }
+
+
   return RTC::RTC_OK;
 }
 

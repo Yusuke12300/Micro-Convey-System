@@ -118,6 +118,19 @@ RTC::ReturnCode_t Hand_Controller::onActivated(RTC::UniqueId /*ec_id*/)
   current_target_id = "";
 
   std::cout << "[Hand_Controller] Activated" << std::endl;
+
+  // ==========================================
+  // Activate時にグリッパを最大まで開く
+  // ==========================================
+  std::cout << "[Hand_Controller] Initial open gripper: 100"
+            << std::endl;
+
+  m_JARA_ARM_ManipulatorCommonInterface_Middle
+    ->moveGripper(100);
+
+  std::cout << "[Hand_Controller] Initial gripper opening completed"
+            << std::endl;
+
   return RTC::RTC_OK;
 }
 
