@@ -30,6 +30,7 @@ from geometry_recognition import (
     CameraIntrinsics,
     DetectionSample,
     camera_to_arm,
+    detect_target_from_color_at_fixed_depth,
     detect_target_from_depth,
     load_arm_camera_transform,
     load_geometry_configuration,
@@ -42,10 +43,12 @@ from geometry_recognition import (
 LOGGER = logging.getLogger("Image_Recognition")
 COMPONENT_DIR = Path(__file__).resolve().parent
 GEOMETRY_CONFIG_FILE = "config/geometry_targets.yaml"
-REQUEST_TIMEOUT_SEC = 4.0
+REQUEST_TIMEOUT_SEC = 15.0
 TEMPORAL_FILTER_WARMUP_FRAMES = 3
+OUTPUT_WRITE_WARNING_INTERVAL_SEC = 1.0
 PREVIEW_WINDOW_NAME = "Image_Recognition - RealSense"
 PREVIEW_OVERLAY_DURATION_SEC = 5.0
+PREVIEW_OUTPUT_STATUS_DURATION_SEC = 5.0
 
 
 # Import Service implementation class
@@ -81,8 +84,8 @@ image_recognition_spec = ["implementation_id", "Image_Recognition",
          "conf.default.confidence_threshold", "0.60",
          "conf.default.detection_window_sec", "1.0",
          "conf.default.depth_roi_radius", "2",
-         "conf.default.min_depth_m", "0.3",
-         "conf.default.max_depth_m", "0.9",
+         "conf.default.min_depth_m", "0.35",
+         "conf.default.max_depth_m", "0.55",
          "conf.default.arm_camera_transform_file", "config/T_arm_camera.yaml",
 
          "conf.__widget__.camera_serial", "text",
@@ -148,7 +151,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._d_Coordinate = OpenRTM_aist.instantiateDataType(RTC.TimedPoint3D)
         """
         """
-        self._Target_Coordinate_OutOut = OpenRTM_aist.OutPort("Target_Coordinate_Out", self._d_Coordinate)
+        self._Target_Coordinate_OutOut = OpenRTM_aist.OutPort("target_point", self._d_Coordinate)
 
 
 		
@@ -225,15 +228,15 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         """
         
          - Name:  min_depth_m
-         - DefaultValue: 0.3
+         - DefaultValue: 0.35
         """
-        self._min_depth_m = [0.3]
+        self._min_depth_m = [0.35]
         """
         
          - Name:  max_depth_m
-         - DefaultValue: 0.9
+         - DefaultValue: 0.55
         """
-        self._max_depth_m = [0.9]
+        self._max_depth_m = [0.55]
         """
         
          - Name:  arm_camera_transform_file
@@ -258,6 +261,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._preview_available = False
         self._preview_error_logged = False
         self._last_detection_overlay = None
+        self._last_output_status = None
         self._depth_scale = 0.001
         self._geometry_settings = None
         self._targets = {}
@@ -266,6 +270,8 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._pending_target_ids = deque()
         self._active_target_id = None
         self._request_started_at = 0.0
+        self._output_write_failed = False
+        self._last_output_write_warning_at = 0.0
         self._samples = deque()
         self._sample_pixels = {}
         self._sample_bounding_boxes = {}
@@ -295,15 +301,15 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self.bindParameter("confidence_threshold", self._confidence_threshold, "0.60")
         self.bindParameter("detection_window_sec", self._detection_window_sec, "1.0")
         self.bindParameter("depth_roi_radius", self._depth_roi_radius, "2")
-        self.bindParameter("min_depth_m", self._min_depth_m, "0.3")
-        self.bindParameter("max_depth_m", self._max_depth_m, "0.9")
+        self.bindParameter("min_depth_m", self._min_depth_m, "0.35")
+        self.bindParameter("max_depth_m", self._max_depth_m, "0.55")
         self.bindParameter("arm_camera_transform_file", self._arm_camera_transform_file, "config/T_arm_camera.yaml")
 		
         # Set InPort buffers
         self.addInPort("Target_In1",self._Target_In1In)
 		
         # Set OutPort buffers
-        self.addOutPort("Target_Coordinate_Out",self._Target_Coordinate_OutOut)
+        self.addOutPort("target_point",self._Target_Coordinate_OutOut)
 		
         # Set service provider to Ports
 		
@@ -360,6 +366,31 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
     # @return RTC::ReturnCode_t
     #
     #
+    def _configure_depth_sensor_for_low_texture_surfaces(self, depth_sensor, rs):
+        """Prefer dense projected depth without making activation depend on it."""
+
+        try:
+            if depth_sensor.supports(rs.option.emitter_enabled):
+                depth_sensor.set_option(rs.option.emitter_enabled, 1.0)
+            if depth_sensor.supports(rs.option.enable_auto_exposure):
+                depth_sensor.set_option(rs.option.enable_auto_exposure, 1.0)
+            if depth_sensor.supports(rs.option.visual_preset):
+                high_density = rs.rs400_visual_preset.high_density
+                depth_sensor.set_option(
+                    rs.option.visual_preset,
+                    float(getattr(high_density, "value", high_density)),
+                )
+            LOGGER.info(
+                "RealSense depth sensor configured for emitter, auto exposure, "
+                "and High Density where supported"
+            )
+        except Exception:
+            LOGGER.warning(
+                "RealSense depth options could not be fully applied; "
+                "color fixed-depth fallback remains available",
+                exc_info=True,
+            )
+
     def onActivated(self, ec_id):
         del ec_id
         self._clear_request_state()
@@ -382,7 +413,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                 self._transform = np.eye(4, dtype=np.float64)
                 LOGGER.warning(
                     "Camera-coordinate test mode is active: "
-                    "Target_Coordinate_Out is not in the arm frame"
+                    "target_point is not in the arm frame"
                 )
 
             import cv2
@@ -411,9 +442,9 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
             )
             profile = self._pipeline.start(camera_config)
             self._pipeline_started = True
-            self._depth_scale = float(
-                profile.get_device().first_depth_sensor().get_depth_scale()
-            )
+            depth_sensor = profile.get_device().first_depth_sensor()
+            self._depth_scale = float(depth_sensor.get_depth_scale())
+            self._configure_depth_sensor_for_low_texture_surfaces(depth_sensor, rs)
             # Keep the native 640x480 RGB image as the reference and align the
             # depth frame to it.  Resampling RGB into the wider depth viewport
             # can introduce black invalid pixels and visible speckle noise.
@@ -475,15 +506,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._receive_target_requests()
         self._start_next_request()
         now = time.monotonic()
-        if (
-            self._active_target_id is not None
-            and now - self._request_started_at >= REQUEST_TIMEOUT_SEC
-        ):
-            LOGGER.warning(
-                "Recognition of %s timed out; no coordinate was output",
-                self._active_target_id,
-            )
-            self._finish_request()
+        self._expire_request_if_needed(now)
 
         try:
             if self._pipeline is None or self._align is None:
@@ -547,13 +570,28 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                     rng=self._rng,
                     color_bgr=color_image,
                 )
-                if detection is not None:
-                    camera_point = self._refine_point_with_depth_roi(
-                        depth_frame, intrinsics, detection.point_camera_m
+                if detection is None:
+                    detection = detect_target_from_color_at_fixed_depth(
+                        color_bgr=color_image,
+                        intrinsics=intrinsics,
+                        target_id=target_id,
+                        target_definition=target_definition,
+                        settings=self._geometry_settings,
+                        confidence_threshold=float(self._confidence_threshold[0]),
                     )
-                    if camera_point is None:
-                        self._show_camera_preview(color_image, now)
-                        return RTC.RTC_OK
+                if detection is not None:
+                    detection_mode = getattr(detection, "detection_mode", "depth")
+                    if detection_mode == "color_fixed_depth":
+                        camera_point = np.asarray(
+                            detection.point_camera_m, dtype=np.float64
+                        )
+                    else:
+                        camera_point = self._refine_point_with_depth_roi(
+                            depth_frame, intrinsics, detection.point_camera_m
+                        )
+                        if camera_point is None:
+                            self._show_camera_preview(color_image, now)
+                            return RTC.RTC_OK
                     if self._output_frame == "arm":
                         output_point = camera_to_arm(camera_point, self._transform)
                     else:
@@ -583,13 +621,27 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                         self._sample_edge_metrics[now],
                         now,
                     )
+                    self._set_output_status(
+                        "Not sent: {} stability {}/{}".format(
+                            (
+                                "color fallback"
+                                if detection_mode == "color_fixed_depth"
+                                else "checking"
+                            ),
+                            len(self._samples),
+                            int(self._min_detection_count[0]),
+                        ),
+                        (0, 255, 255),
+                        now,
+                    )
                     LOGGER.info(
-                        "%s observed dimensions %.1f x %.1f x %.1f mm, "
+                        "%s mode %s, observed dimensions %.1f x %.1f x %.1f mm, "
                         "geometry %.3f, visible face %s mm (%s), "
                         "rectangularity %.3f, "
                         "camera distance %.3f m, color %s, "
                         "color/depth edges %s/%s, combined %.3f",
                         target_id,
+                        detection_mode,
                         *detection.observed_dimensions_mm,
                         detection.geometry_confidence,
                         (
@@ -653,6 +705,33 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         if not 0.0 < float(self._min_depth_m[0]) < float(self._max_depth_m[0]):
             raise ValueError("Depth range must satisfy 0 < min_depth_m < max_depth_m")
 
+    def _expire_request_if_needed(self, now):
+        if (
+            self._active_target_id is None
+            or now - self._request_started_at < REQUEST_TIMEOUT_SEC
+        ):
+            return False
+
+        target_id = self._active_target_id
+        sample_count = len(self._samples)
+        self._set_output_status(
+            "Not sent: {} timed out ({}/{} samples)".format(
+                target_id, sample_count, int(self._min_detection_count[0])
+            ),
+            (0, 0, 255),
+            now,
+        )
+        LOGGER.warning(
+            "Recognition of %s timed out after %.1f s with %d/%d samples; "
+            "no coordinate was output",
+            target_id,
+            REQUEST_TIMEOUT_SEC,
+            sample_count,
+            int(self._min_detection_count[0]),
+        )
+        self._finish_request()
+        return True
+
     def _receive_target_requests(self):
         while self._Target_In1In.isNew():
             received = self._Target_In1In.read()
@@ -671,6 +750,22 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
             self._pending_target_ids.append(target_id)
             LOGGER.info("Queued target request %s", target_id)
 
+    def _queue_preview_target(self, target_id):
+        """Queue one target from a preview keyboard shortcut while idle."""
+
+        if self._active_target_id is not None or self._pending_target_ids:
+            LOGGER.info("Ignored preview request %s because recognition is busy", target_id)
+            return False
+        definition = self._targets.get(target_id)
+        if not definition or definition.get("enabled") is not True:
+            LOGGER.warning(
+                "Ignored preview request %s because it is not enabled", target_id
+            )
+            return False
+        self._pending_target_ids.append(target_id)
+        LOGGER.info("Queued preview target request %s", target_id)
+        return True
+
     def _start_next_request(self):
         if self._active_target_id is not None or not self._pending_target_ids:
             return
@@ -682,6 +777,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._sample_color_ratios = {}
         self._sample_edge_metrics = {}
         self._last_detection_overlay = None
+        self._last_output_status = None
         self._reset_temporal_filter_history()
         LOGGER.info("Started recognition of %s", self._active_target_id)
 
@@ -769,6 +865,13 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
             "expires_at": captured_at + PREVIEW_OVERLAY_DURATION_SEC,
         }
 
+    def _set_output_status(self, text, color, now):
+        self._last_output_status = {
+            "text": str(text),
+            "color": color,
+            "expires_at": now + PREVIEW_OUTPUT_STATUS_DURATION_SEC,
+        }
+
     def _draw_preview_text(self, image, text, origin, color):
         self._cv2.putText(
             image,
@@ -790,6 +893,10 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
             if overlay is not None and now > overlay["expires_at"]:
                 self._last_detection_overlay = None
                 overlay = None
+            output_status = self._last_output_status
+            if output_status is not None and now > output_status["expires_at"]:
+                self._last_output_status = None
+                output_status = None
 
             # Draw the detected region before the information panel so the
             # text always stays readable even when the object is underneath it.
@@ -823,11 +930,19 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                             2,
                         )
 
-            if self._active_target_id is None:
-                status = "Waiting for target ID (t1 - t4)"
+            if self._active_target_id is None and self._pending_target_ids:
+                status = "Queued: {}".format(self._pending_target_ids[0])
+            elif self._active_target_id is None:
+                status = "Waiting: send t1/t2 or press 1/2"
             else:
                 status = "Searching: {}".format(self._active_target_id)
             lines = [(status, (0, 255, 255))]
+            if output_status is not None:
+                lines.append((output_status["text"], output_status["color"]))
+            if self._output_write_failed:
+                lines.append(
+                    ("Output not connected; retrying", (0, 0, 255))
+                )
             if overlay is not None:
                 x, y, z = overlay["point_output_m"]
                 lines.extend(
@@ -837,9 +952,9 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                             (0, 255, 0),
                         ),
                         ("Frame: {}".format(self._output_frame), (0, 255, 0)),
-                        ("X [m]: {:+.4f}".format(x), (0, 255, 0)),
-                        ("Y [m]: {:+.4f}".format(y), (0, 255, 0)),
-                        ("Z [m]: {:+.4f}".format(z), (0, 255, 0)),
+                        ("X [m]: {:+.3f}".format(x), (0, 255, 0)),
+                        ("Y [m]: {:+.3f}".format(y), (0, 255, 0)),
+                        ("Z [m]: {:+.3f}".format(z), (0, 255, 0)),
                         (
                             "Confidence: {:.3f}".format(overlay["confidence"]),
                             (0, 255, 0),
@@ -880,7 +995,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
             # doubled/overlapping appearance on a bright camera image.
             height, width = image.shape[:2]
             line_step = 24
-            panel_width = min(width - 8, 265)
+            panel_width = min(width - 8, 360)
             panel_height = min(height - 8, 12 + line_step * len(lines))
             panel = image.copy()
             self._cv2.rectangle(
@@ -905,6 +1020,8 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                 self._preview_available = False
                 self._cv2.destroyWindow(PREVIEW_WINDOW_NAME)
                 LOGGER.info("RealSense preview window was closed by the user")
+            elif key in (ord("1"), ord("2")):
+                self._queue_preview_target("[T{}]".format(chr(key)))
         except Exception:
             self._preview_available = False
             if not self._preview_error_logged:
@@ -938,9 +1055,12 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                 self._geometry_settings.stable_cluster_radius_m * 1000.0,
             )
             return
+        point_output_m = tuple(
+            round(float(value), 3) for value in best.point_output_m
+        )
         self._set_detection_overlay(
             self._active_target_id,
-            best.point_output_m,
+            point_output_m,
             best.confidence,
             self._sample_pixels.get(best.captured_at),
             self._sample_bounding_boxes.get(best.captured_at),
@@ -948,17 +1068,40 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
             self._sample_edge_metrics.get(best.captured_at),
             now,
         )
-        self._d_Coordinate.data.x = best.point_output_m[0]
-        self._d_Coordinate.data.y = best.point_output_m[1]
-        self._d_Coordinate.data.z = best.point_output_m[2]
+        self._d_Coordinate.data.x = point_output_m[0]
+        self._d_Coordinate.data.y = point_output_m[1]
+        self._d_Coordinate.data.z = point_output_m[2]
         OpenRTM_aist.setTimestamp(self._d_Coordinate)
-        self._Target_Coordinate_OutOut.write()
+        write_succeeded = self._Target_Coordinate_OutOut.write()
+        if not write_succeeded:
+            self._output_write_failed = True
+            self._set_output_status(
+                "Send failed: target_point retrying", (0, 0, 255), now
+            )
+            if (
+                now - self._last_output_write_warning_at
+                >= OUTPUT_WRITE_WARNING_INTERVAL_SEC
+            ):
+                LOGGER.warning(
+                    "target_point write failed; connect "
+                    "Image_Recognition0.target_point to "
+                    "Startup_Generation_Before0.target_point. Retrying while "
+                    "the current recognition request remains active."
+                )
+                self._last_output_write_warning_at = now
+            return
+        self._output_write_failed = False
+        self._set_output_status(
+            "Sent to target_point: {}".format(self._active_target_id),
+            (0, 255, 0),
+            now,
+        )
         LOGGER.info(
-            "Target_Coordinate_Out [%s frame]: %s "
-            "(%.6f, %.6f, %.6f) m, confidence %.3f",
+            "target_point [%s frame]: %s "
+            "(%.3f, %.3f, %.3f) m, confidence %.3f",
             self._output_frame,
             self._active_target_id,
-            *best.point_output_m,
+            *point_output_m,
             best.confidence,
         )
         self._finish_request()
@@ -966,6 +1109,7 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
     def _finish_request(self):
         self._active_target_id = None
         self._request_started_at = 0.0
+        self._output_write_failed = False
         self._samples.clear()
         self._sample_pixels.clear()
         self._sample_bounding_boxes.clear()
@@ -977,6 +1121,8 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         self._pending_target_ids.clear()
         self._active_target_id = None
         self._request_started_at = 0.0
+        self._output_write_failed = False
+        self._last_output_status = None
         self._samples = deque(maxlen=max(1, int(self._buffer_size[0])))
         self._sample_pixels = {}
         self._sample_bounding_boxes = {}

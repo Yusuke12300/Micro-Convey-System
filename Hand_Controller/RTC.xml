@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <rtc:RtcProfile rtc:version="0.3" rtc:id="RTC:VenderName:Controller:Hand_Controller:1.0.0" xmlns:rtc="http://www.openrtp.org/namespaces/rtc" xmlns:rtcExt="http://www.openrtp.org/namespaces/rtc_ext" xmlns:rtcDoc="http://www.openrtp.org/namespaces/rtc_doc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <rtc:BasicInfo xsi:type="rtcExt:basic_info_ext" rtcExt:saveProject="Hand_Controller" rtc:updateDate="2026-08-26T15:00:58.000+09:00" rtc:creationDate="2026-08-26T00:52:27.000+09:00" rtc:version="1.0.0" rtc:vendor="VenderName" rtc:maxInstances="1" rtc:executionType="PeriodicExecutionContext" rtc:executionRate="1000.0" rtc:description="ModuleDescription" rtc:category="Controller" rtc:componentKind="DataFlowComponent" rtc:activityType="PERIODIC" rtc:componentType="STATIC" rtc:name="Hand_Controller"/>
+    <rtc:BasicInfo xsi:type="rtcExt:basic_info_ext" rtcExt:saveProject="Hand_Controller" rtc:updateDate="2026-08-27T12:56:46.000+09:00" rtc:creationDate="2026-08-26T00:52:27.000+09:00" rtc:version="1.0.0" rtc:vendor="VenderName" rtc:maxInstances="1" rtc:executionType="PeriodicExecutionContext" rtc:executionRate="1000.0" rtc:description="ModuleDescription" rtc:category="Controller" rtc:componentKind="DataFlowComponent" rtc:activityType="PERIODIC" rtc:componentType="STATIC" rtc:name="Hand_Controller"/>
     <rtc:Actions>
         <rtc:OnInitialize xsi:type="rtcDoc:action_status_doc" rtc:implemented="true"/>
         <rtc:OnFinalize xsi:type="rtcDoc:action_status_doc" rtc:implemented="false"/>
@@ -16,6 +16,8 @@
         <rtc:OnRateChanged xsi:type="rtcDoc:action_status_doc" rtc:implemented="false"/>
     </rtc:Actions>
     <rtc:DataPorts xsi:type="rtcExt:dataport_ext" rtcExt:position="LEFT" rtcExt:variableName="" rtc:unit="" rtc:subscriptionType="" rtc:dataflowType="" rtc:interfaceType="" rtc:idlFile="&lt;RTM_ROOT&gt;/rtm/idl/BasicDataType.idl" rtc:type="RTC::TimedBoolean" rtc:name="hand_start" rtc:portType="DataInPort"/>
+    <rtc:DataPorts xsi:type="rtcExt:dataport_ext" rtcExt:position="TOP" rtcExt:variableName="" rtc:unit="" rtc:subscriptionType="" rtc:dataflowType="" rtc:interfaceType="" rtc:idlFile="&lt;RTM_ROOT&gt;/rtm/idl/BasicDataType.idl" rtc:type="RTC::TimedString" rtc:name="target_id" rtc:portType="DataInPort"/>
+    <rtc:DataPorts xsi:type="rtcExt:dataport_ext" rtcExt:position="LEFT" rtcExt:variableName="" rtc:unit="" rtc:subscriptionType="" rtc:dataflowType="" rtc:interfaceType="" rtc:idlFile="&lt;RTM_ROOT&gt;/rtm/idl/BasicDataType.idl" rtc:type="RTC::TimedBoolean" rtc:name="hand_release" rtc:portType="DataInPort"/>
     <rtc:DataPorts xsi:type="rtcExt:dataport_ext" rtcExt:position="RIGHT" rtcExt:variableName="" rtc:unit="" rtc:subscriptionType="" rtc:dataflowType="" rtc:interfaceType="" rtc:idlFile="&lt;RTM_ROOT&gt;/rtm/idl/BasicDataType.idl" rtc:type="RTC::TimedBoolean" rtc:name="hand_end" rtc:portType="DataOutPort"/>
     <rtc:ServicePorts xsi:type="rtcExt:serviceport_ext" rtcExt:position="LEFT" rtc:name="middle">
         <rtc:ServiceInterface xsi:type="rtcExt:serviceinterface_ext" rtcExt:variableName="" rtc:type="JARA_ARM::ManipulatorCommonInterface_Middle" rtc:idlFile="&lt;RTM_ROOT&gt;/rtm/idl/ManipulatorCommonInterface_Middle.idl" rtc:instanceName="" rtc:direction="Required" rtc:name="JARA_ARM_ManipulatorCommonInterface_Middle"/>

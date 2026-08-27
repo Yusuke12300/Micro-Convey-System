@@ -120,7 +120,7 @@ class Image_RecognitionTest(OpenRTM_aist.DataFlowComponentBase):
         self._d_Coordinate = OpenRTM_aist.instantiateDataType(RTC.TimedPoint3D)
         """
         """
-        self._Target_Coordinate_OutIn = OpenRTM_aist.InPort("Target_Coordinate_Out", self._d_Coordinate)
+        self._Target_Coordinate_OutIn = OpenRTM_aist.InPort("target_point", self._d_Coordinate)
         self._d_Target = OpenRTM_aist.instantiateDataType(RTC.TimedString)
         """
         """
@@ -246,7 +246,7 @@ class Image_RecognitionTest(OpenRTM_aist.DataFlowComponentBase):
         self.bindParameter("arm_camera_transform_file", self._arm_camera_transform_file, "config/T_arm_camera.yaml")
         
         # Set InPort buffers
-        self.addInPort("Target_Coordinate_Out",self._Target_Coordinate_OutIn)
+        self.addInPort("target_point",self._Target_Coordinate_OutIn)
         
         # Set OutPort buffers
         self.addOutPort("Target_In1",self._Target_In1Out)

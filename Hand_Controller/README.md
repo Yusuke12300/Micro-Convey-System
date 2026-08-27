@@ -169,6 +169,78 @@ ModuleDescription
   </tr>
 </table>
 
+#### target_id
+
+
+
+<table>
+  <tr>
+    <td>DataType</td>
+    <td>RTC::TimedString</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>IDL file</td>
+    <td colspan="2">BasicDataType.idl</td>
+  </tr>
+  <tr>
+    <td>Number of Data</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Semantics</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Unit</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Occirrence frecency Period</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Operational frecency Period</td>
+    <td colspan="2"></td>
+  </tr>
+</table>
+
+#### hand_release
+
+
+
+<table>
+  <tr>
+    <td>DataType</td>
+    <td>RTC::TimedBoolean</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>IDL file</td>
+    <td colspan="2">BasicDataType.idl</td>
+  </tr>
+  <tr>
+    <td>Number of Data</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Semantics</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Unit</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Occirrence frecency Period</td>
+    <td colspan="2"></td>
+  </tr>
+  <tr>
+    <td>Operational frecency Period</td>
+    <td colspan="2"></td>
+  </tr>
+</table>
+
 
 ### OutPorts definition
 

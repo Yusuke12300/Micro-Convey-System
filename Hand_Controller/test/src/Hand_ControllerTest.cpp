@@ -40,6 +40,8 @@ Hand_ControllerTest::Hand_ControllerTest(RTC::Manager* manager)
     // <rtc-template block="initializer">
   : RTC::DataFlowComponentBase(manager),
     m_hand_startOut("hand_start", m_hand_start),
+    m_target_idOut("target_id", m_target_id),
+    m_hand_releaseOut("hand_release", m_hand_release),
     m_hand_endIn("hand_end", m_hand_end),
     m_middlePort("middle")
 
@@ -65,6 +67,8 @@ RTC::ReturnCode_t Hand_ControllerTest::onInitialize()
   
   // Set OutPort buffer
   addOutPort("hand_start", m_hand_startOut);
+  addOutPort("target_id", m_target_idOut);
+  addOutPort("hand_release", m_hand_releaseOut);
   
   // Set service provider to Ports
   m_middlePort.registerProvider("JARA_ARM_ManipulatorCommonInterface_Middle", "JARA_ARM::ManipulatorCommonInterface_Middle", m_JARA_ARM_ManipulatorCommonInterface_Middle);

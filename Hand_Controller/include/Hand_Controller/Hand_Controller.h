@@ -226,6 +226,14 @@ class Hand_Controller
   /*!
    */
   RTC::InPort<RTC::TimedBoolean> m_hand_startIn;
+  RTC::TimedString m_target_id;
+  /*!
+   */
+  RTC::InPort<RTC::TimedString> m_target_idIn;
+  RTC::TimedBoolean m_hand_release;
+  /*!
+   */
+  RTC::InPort<RTC::TimedBoolean> m_hand_releaseIn;
   
   // </rtc-template>
 

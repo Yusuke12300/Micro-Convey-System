@@ -120,6 +120,7 @@ from geometry_recognition import (  # noqa: E402
     DetectionSample,
     DetectorSettings,
     camera_to_arm,
+    detect_target_from_color_at_fixed_depth,
     detect_target_from_depth,
     dimension_confidence,
     depth_edge_mask,
@@ -134,7 +135,7 @@ from geometry_recognition import (  # noqa: E402
 
 
 class GeometryRecognitionTests(unittest.TestCase):
-    def test_rtc_builder_port_contract_is_unchanged(self):
+    def test_rtc_builder_port_contract_matches_startup_generation(self):
         document = ElementTree.parse(PROJECT_ROOT / "RTC.xml")
         ports = []
         for element in document.getroot().iter():
@@ -149,7 +150,7 @@ class GeometryRecognitionTests(unittest.TestCase):
             ports,
             [
                 ("Target_In1", "RTC::TimedString", "DataInPort"),
-                ("Target_Coordinate_Out", "RTC::TimedPoint3D", "DataOutPort"),
+                ("target_point", "RTC::TimedPoint3D", "DataOutPort"),
             ],
         )
         source = (PROJECT_ROOT / "Image_Recognition.py").read_text(encoding="utf-8-sig")
@@ -166,7 +167,7 @@ class GeometryRecognitionTests(unittest.TestCase):
             source,
         )
         self.assertIn(
-            'OpenRTM_aist.OutPort("Target_Coordinate_Out", self._d_Coordinate)',
+            'OpenRTM_aist.OutPort("target_point", self._d_Coordinate)',
             source,
         )
 
@@ -247,15 +248,15 @@ class GeometryRecognitionTests(unittest.TestCase):
         self.assertGreaterEqual(x2, 50)
         self.assertGreaterEqual(y2, 50)
 
-    def test_largest_visible_face_is_accepted_and_narrow_face_is_rejected(self):
+    def test_45_by_33_face_is_accepted_and_narrow_face_is_rejected(self):
         settings = DetectorSettings(
             roi_xyxy=(0, 0, 100, 100),
             plane_sample_stride=2,
             plane_ransac_iterations=50,
             plane_distance_threshold_m=0.002,
             min_plane_inlier_ratio=0.75,
-            object_min_height_m=0.010,
-            object_max_height_m=0.085,
+            object_min_height_m=0.007,
+            object_max_height_m=0.025,
             min_component_area_px=50,
             morphology_kernel_px=1,
             dimension_abs_tolerance_mm=8.0,
@@ -274,10 +275,10 @@ class GeometryRecognitionTests(unittest.TestCase):
         }
         intrinsics = CameraIntrinsics(600.0, 600.0, 49.5, 49.5)
 
-        broad_face_depth = np.ones((100, 100), dtype=np.float32)
-        broad_face_depth[36:64, 40:60] = 0.985
+        top_face_depth = np.ones((100, 100), dtype=np.float32)
+        top_face_depth[36:64, 40:60] = 0.985
         detection = detect_target_from_depth(
-            broad_face_depth,
+            top_face_depth,
             intrinsics,
             "[T1]",
             definition,
@@ -572,6 +573,100 @@ class GeometryRecognitionTests(unittest.TestCase):
             )
         )
 
+    def test_color_fixed_depth_fallback_detects_red_with_no_depth(self):
+        settings = DetectorSettings(
+            roi_xyxy=(0, 0, 100, 100),
+            plane_sample_stride=2,
+            plane_ransac_iterations=40,
+            plane_distance_threshold_m=0.002,
+            min_plane_inlier_ratio=0.8,
+            object_min_height_m=0.007,
+            object_max_height_m=0.025,
+            min_component_area_px=100,
+            max_component_area_px=5000,
+            morphology_kernel_px=1,
+            dimension_abs_tolerance_mm=8.0,
+            dimension_relative_tolerance=0.35,
+            min_rectangularity=0.45,
+        )
+        definition = {
+            "enabled": True,
+            "dimensions_mm": [15.0, 45.0, 33.0],
+            "visible_face": {
+                "dimensions_mm": [45.0, 33.0],
+                "absolute_tolerance_mm": 8.0,
+                "relative_tolerance": 0.30,
+                "confidence_weight": 0.35,
+            },
+            "color": {
+                "enabled": True,
+                "hsv_ranges": [
+                    {"lower": [0, 100, 70], "upper": [12, 255, 255]},
+                    {"lower": [168, 100, 70], "upper": [179, 255, 255]},
+                ],
+                "min_ratio": 0.35,
+                "confidence_weight": 0.40,
+            },
+            "color_fixed_depth_fallback": {
+                "enabled": True,
+                "camera_distance_m": 0.455,
+                "confidence_threshold": 0.60,
+            },
+        }
+        color = np.full((100, 100, 3), 255, dtype=np.uint8)
+        color[28:72, 20:80] = [0, 0, 255]
+
+        detection = detect_target_from_color_at_fixed_depth(
+            color,
+            CameraIntrinsics(600.0, 600.0, 49.5, 49.5),
+            "[T2]",
+            definition,
+            settings,
+            0.60,
+        )
+
+        self.assertIsNotNone(detection)
+        self.assertEqual(detection.detection_mode, "color_fixed_depth")
+        self.assertAlmostEqual(detection.point_camera_m[0], 0.0, places=3)
+        self.assertAlmostEqual(detection.point_camera_m[1], 0.0, places=3)
+        self.assertAlmostEqual(detection.point_camera_m[2], 0.455, places=6)
+        np.testing.assert_allclose(
+            detection.observed_visible_face_mm, [33.0, 45.0], atol=1.0
+        )
+
+        white = np.full((100, 100, 3), 255, dtype=np.uint8)
+        self.assertIsNone(
+            detect_target_from_color_at_fixed_depth(
+                white,
+                CameraIntrinsics(600.0, 600.0, 49.5, 49.5),
+                "[T2]",
+                definition,
+                settings,
+                0.60,
+            )
+        )
+
+        black_definition = dict(definition)
+        black_definition["color"] = {
+            "enabled": True,
+            "hsv_lower": [0, 0, 0],
+            "hsv_upper": [179, 255, 80],
+            "min_ratio": 0.45,
+            "confidence_weight": 0.25,
+        }
+        black = np.full((100, 100, 3), 255, dtype=np.uint8)
+        black[28:72, 20:80] = 0
+        black_detection = detect_target_from_color_at_fixed_depth(
+            black,
+            CameraIntrinsics(600.0, 600.0, 49.5, 49.5),
+            "[T1]",
+            black_definition,
+            settings,
+            0.60,
+        )
+        self.assertIsNotNone(black_detection)
+        self.assertEqual(black_detection.detection_mode, "color_fixed_depth")
+
     def test_depth_edge_support_follows_component_boundary(self):
         depth = np.ones((20, 20), dtype=np.float32)
         component = np.zeros((20, 20), dtype=bool)
@@ -612,6 +707,16 @@ class GeometryRecognitionTests(unittest.TestCase):
         np.testing.assert_allclose(
             camera_to_arm([0.0, 0.0, 0.0], transform),
             [-0.30, 0.0, 0.47],
+            atol=1e-9,
+        )
+        np.testing.assert_allclose(
+            camera_to_arm([0.0, 0.0, 0.47], transform),
+            [-0.30, 0.0, 0.0],
+            atol=1e-9,
+        )
+        np.testing.assert_allclose(
+            camera_to_arm([0.0, 0.0, 0.455], transform),
+            [-0.30, 0.0, 0.015],
             atol=1e-9,
         )
         np.testing.assert_allclose(

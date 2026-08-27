@@ -1,27 +1,29 @@
 # Convert the detected camera coordinates with config/T_arm_camera.yaml and
-# publish Target_Coordinate_Out in the MyCobot base coordinate system.
+# Publish target_point in the MyCobot base coordinate system.
 output_frame: arm
 
-# Depth-geometry detector settings. roi_xyxy [0, 0, 0, 0] means the full image.
+# Depth-geometry detector settings. The ROI is the white work sheet shown in
+# the 640 x 480 RealSense color image. Adjust it if the camera is moved.
 detector:
-  roi_xyxy: [0, 0, 0, 0]
+  roi_xyxy: [80, 25, 510, 330]
   plane_sample_stride: 3
   plane_ransac_iterations: 150
   plane_distance_threshold_m: 0.006
-  # A lower inlier ratio tolerates the foreshortening and larger foreground
-  # area that occur when the work surface is viewed obliquely.
+  # The white sheet occupies most of the ROI but the targets and shadows are
+  # excluded from the work-surface plane fit.
   min_plane_inlier_ratio: 0.35
-  # The known target is 33 mm high. This band rejects shallow depth noise and
-  # taller MyCobot links while leaving margin for reflection-related holes.
-  object_min_height_m: 0.010
-  object_max_height_m: 0.085
+  # The target is laid on its 45 x 33 mm face, so it is 15 mm above the fixed
+  # white work surface. The tolerance admits depth noise but rejects the sheet
+  # itself and the taller MyCobot/conveyor parts.
+  object_min_height_m: 0.007
+  object_max_height_m: 0.025
   min_component_area_px: 50
-  # Keep the upper bound tight so a MyCobot link is still rejected.
-  max_component_area_px: 2500
+  # At 455 mm distance, a 45 x 33 mm face can occupy roughly 3000 pixels.
+  max_component_area_px: 5000
   morphology_kernel_px: 3
   dimension_abs_tolerance_mm: 8.0
   dimension_relative_tolerance: 0.35
-  # A cuboid becomes a trapezoid/hexagonal silhouette in an oblique view.
+  # Allow moderate contour distortion from rounded corners and depth holes.
   min_rectangularity: 0.45
   # Five detections must form a position cluster within this radius. A moving
   # robot link or a one-frame reflection is therefore not published.
@@ -40,22 +42,23 @@ targets:
   "[T1]":
     enabled: true
     dimensions_mm: [15.0, 45.0, 33.0]
-    description: black cuboid detected from its largest 45 x 33 mm face
+    description: black cuboid laid flat and detected from its 45 x 33 mm face
     visible_face:
       dimensions_mm: [45.0, 33.0]
       absolute_tolerance_mm: 8.0
       relative_tolerance: 0.30
       confidence_weight: 0.35
-      # At about 45 degrees, side faces enter the same component. Extract only
-      # the largest planar patch before measuring the 45 x 33 mm face.
+      # With the camera pointing down, measure the horizontal top plane only.
       plane_ransac_iterations: 100
       plane_distance_threshold_m: 0.004
       min_plane_inlier_ratio: 0.30
-    # The target is expected around 550 mm along the optical Z axis.  The
-    # wider band tolerates a changed optical depth in an oblique view.
+    # Camera-to-ground distance is 0.470 m. The 15 mm-high target surface is
+    # therefore expected at 0.470 - 0.015 = 0.455 m.
     camera_distance:
-      expected_m: 0.550
-      tolerance_m: 0.200
+      expected_m: 0.455
+      # Accept 0.375 - 0.535 m to tolerate placement near the image edges and
+      # small departures from a perfectly parallel work surface.
+      tolerance_m: 0.080
       confidence_weight: 0.10
     # OpenCV HSV range for a matte black surface. Hue and saturation are
     # unrestricted; black is represented by low brightness (V).
@@ -65,11 +68,17 @@ targets:
       hsv_upper: [179, 255, 80]
       min_ratio: 0.45
       confidence_weight: 0.25
+    # The D435 may return no depth on the glossy/low-texture target. In that
+    # case, measure the 45 x 33 mm color rectangle and use the known top depth.
+    color_fixed_depth_fallback:
+      enabled: true
+      camera_distance_m: 0.455
+      confidence_threshold: 0.60
 
   "[T2]":
     enabled: true
     dimensions_mm: [15.0, 45.0, 33.0]
-    description: red cuboid detected from its largest 45 x 33 mm face
+    description: red cuboid laid flat and detected from its 45 x 33 mm face
     visible_face:
       dimensions_mm: [45.0, 33.0]
       absolute_tolerance_mm: 8.0
@@ -79,8 +88,8 @@ targets:
       plane_distance_threshold_m: 0.004
       min_plane_inlier_ratio: 0.30
     camera_distance:
-      expected_m: 0.550
-      tolerance_m: 0.200
+      expected_m: 0.455
+      tolerance_m: 0.080
       confidence_weight: 0.10
     # Red wraps around the OpenCV hue boundary, so both hue bands are ORed.
     color:
@@ -92,6 +101,10 @@ targets:
           upper: [179, 255, 255]
       min_ratio: 0.35
       confidence_weight: 0.40
+    color_fixed_depth_fallback:
+      enabled: true
+      camera_distance_m: 0.455
+      confidence_threshold: 0.60
 
   "[T3]":
     enabled: false

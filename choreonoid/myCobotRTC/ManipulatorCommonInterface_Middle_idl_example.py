@@ -131,11 +131,33 @@ class ManipulatorCommonInterface_Middle_i (JARA_ARM__POA.ManipulatorCommonInterf
         # *** Implement me
         # Must return: result, xLimit, yLimit, zLimit
 
-    # RETURN_ID moveGripper(in ULONG angleRatio)
     def moveGripper(self, angleRatio):
-        raise CORBA.NO_IMPLEMENT(0, CORBA.COMPLETED_NO)
-        # *** Implement me
-        # Must return: result
+
+        value = int(angleRatio)
+
+        # 0～100の範囲に制限
+        if value < 0:
+            value = 0
+        elif value > 100:
+            value = 100
+
+        print("[myCobotRTC] moveGripper command =", value)
+
+        # Adaptive Gripperを指定した開度へ移動
+        ret = self._mycobot.set_gripper_value(value, 80, 1)
+
+        print("[myCobotRTC] set_gripper_value return =", ret)
+
+        # 動作待ち
+        time.sleep(2)
+
+        actual = self._mycobot.get_gripper_value(1)
+
+        print("[myCobotRTC] actual gripper value =", actual)
+
+        return JARA_ARM.RETURN_ID(0, "OK")
+            # *** Implement me
+            # Must return: result
 
     # RETURN_ID moveLinearCartesianAbs(in CarPosWithElbow carPoint)
     def moveLinearCartesianAbs(self, carPoint):
