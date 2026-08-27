@@ -115,9 +115,9 @@ RTC::ReturnCode_t Startup_Generation_After::onActivated(RTC::UniqueId /*ec_id*/)
     m_target_list.clear();
 
     RTC::Pose3D pose1;
-    pose1.position.x = 0.2;
+    pose1.position.x = 0.0;
     pose1.position.y = 0.0;
-    pose1.position.z = 0.27;
+    pose1.position.z = 0.4;
 
     pose1.orientation.r = 0.0;
     pose1.orientation.p = 0.0;
@@ -206,10 +206,13 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
                 setTimestamp(m_endcmd); // 完了通知にも現在時刻を付与
                 m_endcmdOut.write();
 
-                m_step = 0; // 初期状態に戻る
+                m_step = 4; 
                 std::cout << "動作完了" << std::endl;
             }
         }
+        break;
+
+    case 4:
         break;
     }
 
