@@ -222,16 +222,15 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
       // ========================================
       if (current_target_id == "t1")
       {
-        gripper_value = 67;
+        gripper_value = 57;
       }
       else if (current_target_id == "t2")
       {
-        // 後で設定
-        // gripper_value = ○○;
+        gripper_value = 35;
       }
       else if (current_target_id == "t3")
       {
-        gripper_value = 67;
+        gripper_value = 57;
       }
       else if (current_target_id == "t4")
       {
