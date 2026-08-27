@@ -115,8 +115,8 @@ RTC::ReturnCode_t Startup_Generation_After::onActivated(RTC::UniqueId /*ec_id*/)
     m_target_list.clear();
 
     RTC::Pose3D pose1;
-    pose1.position.x = 0.0;
-    pose1.position.y = -0.2;
+    pose1.position.x = 0.2;
+    pose1.position.y = 0.0;
     pose1.position.z = 0.2;
 
     pose1.orientation.r = 0.0;
@@ -125,14 +125,24 @@ RTC::ReturnCode_t Startup_Generation_After::onActivated(RTC::UniqueId /*ec_id*/)
     m_target_list.push_back(pose1);
 
     RTC::Pose3D pose2;
-    pose2.position.x = 0.2;
-    pose2.position.y = 0.0;
-    pose2.position.z = 0.24;
+    pose2.position.x = 0.0;
+    pose2.position.y = -0.2;
+    pose2.position.z = 0.2;
 
     pose2.orientation.r = 0.0;
     pose2.orientation.p = 0.0;
     pose2.orientation.y = 0.0;
     m_target_list.push_back(pose2);
+
+    RTC::Pose3D pose3;
+    pose3.position.x = 0.2;
+    pose3.position.y = 0.0;
+    pose3.position.z = 0.24;
+
+    pose3.orientation.r = 0.0;
+    pose3.orientation.p = 0.0;
+    pose3.orientation.y = 0.0;
+    m_target_list.push_back(pose3);
 
     return RTC::RTC_OK;
 }
@@ -185,17 +195,34 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
             m_endcmd_from_ArmControllerIn.read();
 
             if (m_endcmd_from_ArmController.data == true) {
+                m_target_pose.data = m_target_list[2];
+                setTimestamp(m_target_pose); // 現在時刻を付与
+                m_target_poseOut.write();
+
+                m_step = 3;
+                std::cout << "第三座標を送信" << std::endl;
+            }
+        }
+        break;
+
+
+    case 3://アームコンポーネントからの2回目の完了信号待ち
+
+        if (m_endcmd_from_ArmControllerIn.isNew()) {
+            m_endcmd_from_ArmControllerIn.read();
+
+            if (m_endcmd_from_ArmController.data == true) {
                 std::cout << "アームコンポーネントからの完了通知を受信" << std::endl;
                 m_endcmd_to_HandController.data = true;
                 setTimestamp(m_endcmd_to_HandController);
                 m_endcmd_to_HandControllerOut.write();
 
-                m_step = 3;
+                m_step = 4;
             }
         }
         break;
 
-    case 3:
+    case 4:
         if (m_endcmd_from_HandControllerIn.isNew()) {
             m_endcmd_from_HandControllerIn.read();
 
@@ -206,13 +233,13 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
                 setTimestamp(m_endcmd); // 完了通知にも現在時刻を付与
                 m_endcmdOut.write();
 
-                m_step = 4; 
+                m_step = 5; 
                 std::cout << "動作完了" << std::endl;
             }
         }
         break;
 
-    case 4:
+    case 5:
         break;
     }
 
