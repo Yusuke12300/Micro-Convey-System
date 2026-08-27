@@ -1,0 +1,21 @@
+2026-08-27 12:10:17,900 file.manager INFO 2.1.0
+2026-08-27 12:10:17,901 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-27 12:10:17,902 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-27 12:10:17,902 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-27 12:10:17,903 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-27 12:10:17,903 file.manager INFO   All right reserved.
+2026-08-27 12:10:17,903 file.manager INFO Manager starting.
+2026-08-27 12:10:17,903 file.manager INFO Starting local logging.
+2026-08-27 12:10:17,945 file.manager.namingmanager INFO NameServer connection succeeded: corba/localhost:2809
+2026-08-27 12:10:17,947 file.LocalServiceAdmin INFO All the local services are enabled.
+2026-08-27 12:10:18,007 file.manager INFO Component type conf file: Image_Recognition.conf loaded.
+2026-08-27 12:10:18,008 file.ec_base INFO setRate(1000000.000000) done
+2026-08-27 12:10:18,009 file.ec_base INFO setRate(10.000000) done
+2026-08-27 12:10:18,010 file.rtobject INFO 1 execution context was created.
+2026-08-27 12:10:18,013 file.rtobject INFO Initial active configuration set is default.
+2026-08-27 12:10:46,538 file.SdoServiceAdmin WARNING No available SDO service in the factory: 
+2026-08-27 12:10:46,538 file.SdoServiceAdmin ERROR type  not exists.
+2026-08-27 12:11:13,342 file.ec_base WARNING The component is not responding.
+2026-08-27 12:11:14,177 file.ec_base ERROR Unknown error: Invalid state transition.
+2026-08-27 12:43:05,791 file.ec_base ERROR The component is not responding.
+2026-08-27 12:43:05,791 file.ec_base ERROR Unknown error: Invalid state transition.

@@ -23,6 +23,7 @@ class FakePort:
         self.data = data
         self.values = deque()
         self.write_count = 0
+        self.write_result = True
 
     def isNew(self):
         return bool(self.values)
@@ -32,6 +33,7 @@ class FakePort:
 
     def write(self):
         self.write_count += 1
+        return self.write_result
 
 
 class FakeComponentBase:
@@ -87,6 +89,7 @@ geometry = ModuleType("geometry_recognition")
 geometry.CameraIntrinsics = object
 geometry.DetectionSample = DetectionSample
 geometry.camera_to_arm = lambda point, transform: point
+geometry.detect_target_from_color_at_fixed_depth = lambda **kwargs: None
 geometry.detect_target_from_depth = lambda **kwargs: None
 geometry.load_arm_camera_transform = lambda path: None
 geometry.load_geometry_configuration = lambda path: (None, {}, "camera")
@@ -112,7 +115,7 @@ sys.modules["geometry_recognition"] = geometry
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from Image_Recognition import Image_Recognition  # noqa: E402
+from Image_Recognition import Image_Recognition, REQUEST_TIMEOUT_SEC  # noqa: E402
 
 # Keep Image_Recognition bound to the lightweight fake helpers above, but do
 # not leak the fake module into geometry_recognition's independent test file.
@@ -123,10 +126,10 @@ class ComponentLogicTests(unittest.TestCase):
     def setUp(self):
         self.component = Image_Recognition(object())
 
-    def test_builder_ports_are_constructed_unchanged(self):
+    def test_builder_ports_match_startup_generation_interface(self):
         self.assertEqual(self.component._Target_In1In.name, "Target_In1")
         self.assertEqual(
-            self.component._Target_Coordinate_OutOut.name, "Target_Coordinate_Out"
+            self.component._Target_Coordinate_OutOut.name, "target_point"
         )
         self.assertEqual(self.component.onInitialize(), rtc.RTC_OK)
 
@@ -139,6 +142,24 @@ class ComponentLogicTests(unittest.TestCase):
         )
         self.component._receive_target_requests()
         self.assertEqual(list(self.component._pending_target_ids), ["[T1]", "[T1]"])
+
+    def test_preview_shortcut_queues_only_one_enabled_target_while_idle(self):
+        self.component._targets = {
+            "[T1]": {"enabled": True},
+            "[T2]": {"enabled": True},
+            "[T3]": {"enabled": False},
+        }
+
+        self.assertTrue(self.component._queue_preview_target("[T1]"))
+        self.assertEqual(list(self.component._pending_target_ids), ["[T1]"])
+        self.assertFalse(self.component._queue_preview_target("[T2]"))
+
+        self.component._pending_target_ids.clear()
+        self.component._active_target_id = "[T1]"
+        self.assertFalse(self.component._queue_preview_target("[T2]"))
+
+        self.component._active_target_id = None
+        self.assertFalse(self.component._queue_preview_target("[T3]"))
 
     def test_highest_confidence_coordinate_is_published_once(self):
         self.component._active_target_id = "[T1]"
@@ -159,6 +180,49 @@ class ComponentLogicTests(unittest.TestCase):
         self.assertEqual((point.x, point.y, point.z), (4.0, 5.0, 6.0))
         self.assertEqual(self.component._Target_Coordinate_OutOut.write_count, 1)
         self.assertIsNone(self.component._active_target_id)
+        self.assertIn("Sent to target_point", self.component._last_output_status["text"])
+
+    def test_failed_outport_write_keeps_request_active_and_retries(self):
+        self.component._active_target_id = "[T1]"
+        self.component._request_started_at = time.monotonic() - 1.0
+        self.component._min_detection_count[0] = 1
+        self.component._geometry_settings = SimpleNamespace(
+            stable_cluster_radius_m=0.012
+        )
+        self.component._samples.append(
+            DetectionSample(0.95, (0.315, -0.315, 0.1049), 1.0)
+        )
+        outport = self.component._Target_Coordinate_OutOut
+        outport.write_result = False
+
+        self.component._publish_if_ready(time.monotonic())
+
+        self.assertEqual(outport.write_count, 1)
+        self.assertEqual(self.component._active_target_id, "[T1]")
+        self.assertTrue(self.component._output_write_failed)
+
+        outport.write_result = True
+        self.component._publish_if_ready(time.monotonic())
+
+        self.assertEqual(outport.write_count, 2)
+        self.assertIsNone(self.component._active_target_id)
+        self.assertFalse(self.component._output_write_failed)
+
+    def test_slow_recognition_waits_fifteen_seconds_before_timeout(self):
+        self.component._active_target_id = "[T2]"
+        self.component._request_started_at = 100.0
+        self.component._samples.extend(
+            [DetectionSample(0.8, (0.1, 0.2, 0.3), 101.0)] * 2
+        )
+
+        self.assertFalse(self.component._expire_request_if_needed(104.1))
+        self.assertEqual(self.component._active_target_id, "[T2]")
+        self.assertEqual(REQUEST_TIMEOUT_SEC, 15.0)
+
+        self.assertTrue(self.component._expire_request_if_needed(115.0))
+        self.assertIsNone(self.component._active_target_id)
+        self.assertIn("Not sent", self.component._last_output_status["text"])
+        self.assertIn("2/5 samples", self.component._last_output_status["text"])
 
     def test_non_finite_detection_point_is_discarded(self):
         point = self.component._refine_point_with_depth_roi(
