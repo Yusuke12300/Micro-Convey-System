@@ -41,6 +41,9 @@ rtcon /%NS%/Hand_Controller0.rtc:hand_end /%NS%/Startup_Generation_After0.rtc:en
 REM [11, 12] Hand_Controller(Service) <-> myCobot(Service)
 rtcon /%NS%/Hand_Controller0.rtc:middle /%NS%/myCobot0.rtc:middle
 
+rtcon /%NS%/Select_Target0.rtc:target_out1 /%NS%/Image_Recognition0.rtc:Target_In1
+rtcon /%NS%/ImageRecognition0.rtc:target_point /%NS%/Startup_Generatoin_Before0.rtc:target_point
+
 echo.
 echo ==========================================
 echo 接続処理が完了しました。
