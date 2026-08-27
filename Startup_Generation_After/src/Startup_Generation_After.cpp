@@ -8,6 +8,7 @@
 // </rtc-template>
 
 #include "Startup_Generation_After.h"
+#include<iostream>
 
 // Module specification
 // <rtc-template block="module_spec">
@@ -153,6 +154,8 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
                 m_target_poseOut.write();
 
                 m_step = 1;
+                std::cout << "ハンドコンポーネントからの完了通知を取得" << std::endl;
+                std::cout << "第一座標を送信" << std::endl;
             }
         }
         break;
@@ -168,6 +171,7 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
                 m_target_poseOut.write();
 
                 m_step = 2;
+                std::cout << "第二座標を送信" << std::endl;
             }
         }
         break;
@@ -183,6 +187,7 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
                 m_endcmdOut.write();
 
                 m_step = 0; // 初期状態に戻る
+                std::cout << "動作完了" << std::endl;
             }
         }
         break;

@@ -1,0 +1,19 @@
+2026-08-26 21:10:19,160 file.manager INFO 2.1.0
+2026-08-26 21:10:19,161 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-26 21:10:19,161 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-26 21:10:19,162 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-26 21:10:19,162 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-26 21:10:19,162 file.manager INFO   All right reserved.
+2026-08-26 21:10:19,163 file.manager INFO Manager starting.
+2026-08-26 21:10:19,163 file.manager INFO Starting local logging.
+2026-08-26 21:10:19,189 file.manager.namingmanager INFO NameServer connection succeeded: corba/localhost:2809
+2026-08-26 21:10:19,207 file.LocalServiceAdmin INFO All the local services are enabled.
+2026-08-26 21:10:19,272 file.manager INFO Component type conf file: Image_Recognition.conf loaded.
+2026-08-26 21:10:19,277 file.ec_base INFO setRate(1000000.000000) done
+2026-08-26 21:10:19,278 file.ec_base INFO setRate(10.000000) done
+2026-08-26 21:10:19,280 file.rtobject INFO 1 execution context was created.
+2026-08-26 21:10:19,296 file.rtobject INFO Initial active configuration set is default.
+2026-08-26 21:10:56,916 file.ec_base WARNING The component is not responding.
+2026-08-26 21:10:56,919 file.ec_base ERROR Unknown error: Invalid state transition.
+2026-08-26 21:13:14,948 file.ec_base ERROR The component is not responding.
+2026-08-26 21:13:14,950 file.ec_base ERROR Unknown error: Invalid state transition.

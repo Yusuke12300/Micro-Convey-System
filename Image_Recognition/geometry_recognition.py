@@ -60,6 +60,8 @@ class GeometryDetection:
     edge_confidence: Optional[float]
     color_edge_ratio: Optional[float]
     depth_edge_ratio: Optional[float]
+    visible_face_confidence: Optional[float]
+    observed_visible_face_mm: Optional[tuple[float, float]]
     rectangularity: float
     camera_distance_m: float
     point_camera_m: tuple[float, float, float]
@@ -178,6 +180,75 @@ def load_geometry_configuration(
             if any(value <= 0.0 for value in dimensions):
                 raise ValueError(f"dimensions_mm for {target_id} must be positive")
             definition["dimensions_mm"] = dimensions
+            visible_face_definition = definition.get("visible_face")
+            if visible_face_definition is not None:
+                if not isinstance(visible_face_definition, dict):
+                    raise ValueError(
+                        f"visible_face for {target_id} must be a mapping"
+                    )
+                visible_face_definition = dict(visible_face_definition)
+                face_dimensions = visible_face_definition.get("dimensions_mm")
+                if not isinstance(face_dimensions, list) or len(face_dimensions) != 2:
+                    raise ValueError(
+                        f"visible_face for {target_id} needs two dimensions_mm values"
+                    )
+                face_dimensions = [float(value) for value in face_dimensions]
+                if any(value <= 0.0 for value in face_dimensions):
+                    raise ValueError(
+                        f"visible_face dimensions for {target_id} must be positive"
+                    )
+                absolute_tolerance_mm = float(
+                    visible_face_definition.get("absolute_tolerance_mm", 8.0)
+                )
+                relative_tolerance = float(
+                    visible_face_definition.get("relative_tolerance", 0.30)
+                )
+                confidence_weight = float(
+                    visible_face_definition.get("confidence_weight", 0.35)
+                )
+                plane_ransac_iterations = int(
+                    visible_face_definition.get("plane_ransac_iterations", 80)
+                )
+                plane_distance_threshold_m = float(
+                    visible_face_definition.get(
+                        "plane_distance_threshold_m", 0.004
+                    )
+                )
+                min_plane_inlier_ratio = float(
+                    visible_face_definition.get("min_plane_inlier_ratio", 0.30)
+                )
+                if absolute_tolerance_mm <= 0.0 or relative_tolerance <= 0.0:
+                    raise ValueError(
+                        f"visible_face tolerances for {target_id} must be positive"
+                    )
+                if not 0.0 <= confidence_weight <= 1.0:
+                    raise ValueError(
+                        f"visible_face.confidence_weight for {target_id} must be 0..1"
+                    )
+                if plane_ransac_iterations <= 0 or plane_distance_threshold_m <= 0.0:
+                    raise ValueError(
+                        f"visible_face plane settings for {target_id} must be positive"
+                    )
+                if not 0.0 < min_plane_inlier_ratio <= 1.0:
+                    raise ValueError(
+                        f"visible_face.min_plane_inlier_ratio for {target_id} must be 0..1"
+                    )
+                visible_face_definition["dimensions_mm"] = face_dimensions
+                visible_face_definition[
+                    "absolute_tolerance_mm"
+                ] = absolute_tolerance_mm
+                visible_face_definition["relative_tolerance"] = relative_tolerance
+                visible_face_definition["confidence_weight"] = confidence_weight
+                visible_face_definition[
+                    "plane_ransac_iterations"
+                ] = plane_ransac_iterations
+                visible_face_definition[
+                    "plane_distance_threshold_m"
+                ] = plane_distance_threshold_m
+                visible_face_definition[
+                    "min_plane_inlier_ratio"
+                ] = min_plane_inlier_ratio
+                definition["visible_face"] = visible_face_definition
             distance_definition = definition.get("camera_distance")
             if distance_definition is not None:
                 if not isinstance(distance_definition, dict):
@@ -209,25 +280,46 @@ def load_geometry_configuration(
             color_enabled = color_definition.get("enabled", False) is True
             color_definition["enabled"] = color_enabled
             if color_enabled:
-                lower = color_definition.get("hsv_lower")
-                upper = color_definition.get("hsv_upper")
-                if (
-                    not isinstance(lower, list)
-                    or not isinstance(upper, list)
-                    or len(lower) != 3
-                    or len(upper) != 3
-                ):
+                raw_ranges = color_definition.get("hsv_ranges")
+                if raw_ranges is None:
+                    raw_ranges = [
+                        {
+                            "lower": color_definition.get("hsv_lower"),
+                            "upper": color_definition.get("hsv_upper"),
+                        }
+                    ]
+                if not isinstance(raw_ranges, list) or not raw_ranges:
                     raise ValueError(
-                        f"Enabled color for {target_id} needs hsv_lower/hsv_upper"
+                        f"Enabled color for {target_id} needs at least one HSV range"
                     )
-                lower = [int(value) for value in lower]
-                upper = [int(value) for value in upper]
                 limits = [179, 255, 255]
-                if any(
-                    low < 0 or high > limit or low > high
-                    for low, high, limit in zip(lower, upper, limits)
-                ):
-                    raise ValueError(f"Invalid HSV range for {target_id}")
+                normalized_ranges = []
+                for range_index, raw_range in enumerate(raw_ranges):
+                    if not isinstance(raw_range, dict):
+                        raise ValueError(
+                            f"HSV range {range_index} for {target_id} must be a mapping"
+                        )
+                    lower = raw_range.get("lower")
+                    upper = raw_range.get("upper")
+                    if (
+                        not isinstance(lower, list)
+                        or not isinstance(upper, list)
+                        or len(lower) != 3
+                        or len(upper) != 3
+                    ):
+                        raise ValueError(
+                            f"HSV range {range_index} for {target_id} needs lower/upper"
+                        )
+                    lower = [int(value) for value in lower]
+                    upper = [int(value) for value in upper]
+                    if any(
+                        low < 0 or high > limit or low > high
+                        for low, high, limit in zip(lower, upper, limits)
+                    ):
+                        raise ValueError(
+                            f"Invalid HSV range {range_index} for {target_id}"
+                        )
+                    normalized_ranges.append({"lower": lower, "upper": upper})
                 min_ratio = float(color_definition.get("min_ratio", 0.45))
                 confidence_weight = float(
                     color_definition.get("confidence_weight", 0.35)
@@ -238,8 +330,7 @@ def load_geometry_configuration(
                     raise ValueError(
                         f"color.confidence_weight for {target_id} must be 0..1"
                     )
-                color_definition["hsv_lower"] = lower
-                color_definition["hsv_upper"] = upper
+                color_definition["hsv_ranges"] = normalized_ranges
                 color_definition["min_ratio"] = min_ratio
                 color_definition["confidence_weight"] = confidence_weight
             definition["color"] = color_definition
@@ -382,6 +473,76 @@ def dimension_confidence(
     if np.any(normalized_error > 1.0):
         return None
     return float(np.exp(-0.5 * np.mean(normalized_error**2)))
+
+
+def visible_face_confidence(
+    observed_dimensions_mm: Iterable[float],
+    expected_dimensions_mm: Iterable[float],
+    absolute_tolerance_mm: float,
+    relative_tolerance: float,
+) -> Optional[float]:
+    """Score the two orientation-free dimensions of a visible planar face."""
+
+    observed = np.sort(np.asarray(tuple(observed_dimensions_mm), dtype=np.float64))
+    expected = np.sort(np.asarray(tuple(expected_dimensions_mm), dtype=np.float64))
+    if observed.shape != (2,) or expected.shape != (2,):
+        raise ValueError("Visible face dimensions must each contain two values")
+    tolerance = np.maximum(absolute_tolerance_mm, expected * relative_tolerance)
+    normalized_error = np.abs(observed - expected) / tolerance
+    if np.any(normalized_error > 1.0):
+        return None
+    return float(np.exp(-0.5 * np.mean(normalized_error**2)))
+
+
+def measure_visible_face(
+    points_camera_m: np.ndarray,
+    rng: np.random.Generator,
+    ransac_iterations: int = 80,
+    distance_threshold_m: float = 0.004,
+    min_inlier_ratio: float = 0.30,
+) -> Optional[tuple[tuple[float, float], np.ndarray]]:
+    """Extract the dominant visible plane and measure its 3D rectangle."""
+
+    points = np.asarray(points_camera_m, dtype=np.float64)
+    if points.ndim != 2 or points.shape[1] != 3 or len(points) < 6:
+        return None
+    plane = fit_plane_ransac(
+        points,
+        ransac_iterations,
+        distance_threshold_m,
+        min_inlier_ratio,
+        rng,
+    )
+    if plane is None:
+        return None
+    normal, offset = plane
+    inliers = np.abs(points @ normal + offset) <= distance_threshold_m
+    surface_points = points[inliers]
+    if len(surface_points) < 6:
+        return None
+    plane_origin = -offset * normal
+    plane_u, plane_v = _plane_axes(normal)
+    relative = surface_points - plane_origin
+    surface_coordinates = np.column_stack(
+        (relative @ plane_u, relative @ plane_v)
+    ).astype(np.float32)
+    rectangle = cv2.minAreaRect(surface_coordinates)
+    face_a, face_b = (float(value) for value in rectangle[1])
+    if face_a <= 0.0 or face_b <= 0.0:
+        return None
+    center_u, center_v = rectangle[0]
+    face_center = (
+        plane_origin
+        + float(center_u) * plane_u
+        + float(center_v) * plane_v
+    )
+    if face_center.shape != (3,) or not np.all(np.isfinite(face_center)):
+        return None
+    dimensions_mm = tuple(
+        float(value)
+        for value in np.sort(np.asarray([face_a, face_b]) * 1000.0)
+    )
+    return dimensions_mm, face_center
 
 
 def depth_edge_mask(depth_m: np.ndarray, threshold_m: float) -> np.ndarray:
@@ -532,15 +693,30 @@ def detect_target_from_depth(
     color_mask: Optional[np.ndarray] = None
     if color_enabled:
         hsv = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2HSV)
-        color_mask = cv2.inRange(
-            hsv,
-            np.asarray(color_definition["hsv_lower"], dtype=np.uint8),
-            np.asarray(color_definition["hsv_upper"], dtype=np.uint8),
-        ) > 0
+        hsv_ranges = color_definition.get("hsv_ranges")
+        if hsv_ranges is None:
+            # Backward compatibility for tests and hand-written definitions
+            # that still use one hsv_lower/hsv_upper pair.
+            hsv_ranges = [
+                {
+                    "lower": color_definition["hsv_lower"],
+                    "upper": color_definition["hsv_upper"],
+                }
+            ]
+        color_mask = np.zeros(depth_m.shape, dtype=bool)
+        for hsv_range in hsv_ranges:
+            color_mask |= cv2.inRange(
+                hsv,
+                np.asarray(hsv_range["lower"], dtype=np.uint8),
+                np.asarray(hsv_range["upper"], dtype=np.uint8),
+            ) > 0
     color_edges: Optional[np.ndarray] = None
     depth_edges: Optional[np.ndarray] = None
     if edge_enabled:
         gray = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2GRAY)
+        # Suppress sensor and resampling speckles before Canny.  Edges are
+        # used only for scoring and are never drawn into the preview image.
+        gray = cv2.GaussianBlur(gray, (5, 5), 0.0)
         color_edges = cv2.Canny(
             gray,
             settings.color_canny_low_threshold,
@@ -597,8 +773,40 @@ def detect_target_from_depth(
         )
         if geometry_confidence is None:
             continue
-        color_ratio: Optional[float] = None
+        visible_face_score: Optional[float] = None
+        observed_visible_face_mm: Optional[tuple[float, float]] = None
+        visible_face_center: Optional[np.ndarray] = None
         confidence = geometry_confidence
+        visible_face_definition = target_definition.get("visible_face")
+        if visible_face_definition is not None:
+            face_measurement = measure_visible_face(
+                points,
+                rng,
+                int(visible_face_definition.get("plane_ransac_iterations", 80)),
+                float(
+                    visible_face_definition.get(
+                        "plane_distance_threshold_m", 0.004
+                    )
+                ),
+                float(visible_face_definition.get("min_plane_inlier_ratio", 0.30)),
+            )
+            if face_measurement is None:
+                continue
+            observed_visible_face_mm, visible_face_center = face_measurement
+            visible_face_score = visible_face_confidence(
+                observed_visible_face_mm,
+                visible_face_definition["dimensions_mm"],
+                float(visible_face_definition["absolute_tolerance_mm"]),
+                float(visible_face_definition["relative_tolerance"]),
+            )
+            if visible_face_score is None:
+                continue
+            face_weight = float(visible_face_definition["confidence_weight"])
+            confidence = (
+                (1.0 - face_weight) * confidence
+                + face_weight * visible_face_score
+            )
+        color_ratio: Optional[float] = None
         if color_enabled:
             color_ratio = float(np.count_nonzero(color_mask & component)) / float(
                 pixel_area
@@ -607,7 +815,7 @@ def detect_target_from_depth(
                 continue
             color_weight = float(color_definition["confidence_weight"])
             confidence = (
-                (1.0 - color_weight) * geometry_confidence
+                (1.0 - color_weight) * confidence
                 + color_weight * color_ratio
             )
         edge_confidence: Optional[float] = None
@@ -637,13 +845,18 @@ def detect_target_from_depth(
             + float(center_v) * plane_v
             + object_height * normal
         )
+        detection_point = (
+            visible_face_center
+            if visible_face_center is not None
+            else top_center
+        )
         if (
-            top_center.shape != (3,)
-            or not np.all(np.isfinite(top_center))
-            or top_center[2] <= 0.0
+            detection_point.shape != (3,)
+            or not np.all(np.isfinite(detection_point))
+            or detection_point[2] <= 0.0
         ):
             continue
-        camera_distance_m = float(top_center[2])
+        camera_distance_m = float(detection_point[2])
         distance_definition = target_definition.get("camera_distance")
         if distance_definition is not None:
             distance_error = abs(
@@ -670,9 +883,11 @@ def detect_target_from_depth(
             edge_confidence=edge_confidence,
             color_edge_ratio=color_edge_ratio,
             depth_edge_ratio=depth_edge_ratio,
+            visible_face_confidence=visible_face_score,
+            observed_visible_face_mm=observed_visible_face_mm,
             rectangularity=rectangularity,
             camera_distance_m=camera_distance_m,
-            point_camera_m=tuple(float(value) for value in top_center),
+            point_camera_m=tuple(float(value) for value in detection_point),
             observed_dimensions_mm=observed_mm,
             pixel_area=pixel_area,
             bounding_box_xyxy=(

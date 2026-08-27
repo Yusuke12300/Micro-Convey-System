@@ -166,6 +166,19 @@ class ComponentLogicTests(unittest.TestCase):
         )
         self.assertIsNone(point)
 
+    def test_each_request_resets_temporal_filter_history(self):
+        old_filter = object()
+        new_filter = object()
+        self.component._temporal_filter = old_filter
+        self.component._rs = SimpleNamespace(temporal_filter=lambda: new_filter)
+        self.component._pending_target_ids.append("[T1]")
+
+        self.component._start_next_request()
+
+        self.assertEqual(self.component._active_target_id, "[T1]")
+        self.assertIs(self.component._temporal_filter, new_filter)
+        self.assertEqual(self.component._filter_warmup_frames_remaining, 3)
+
 
 if __name__ == "__main__":
     unittest.main()
