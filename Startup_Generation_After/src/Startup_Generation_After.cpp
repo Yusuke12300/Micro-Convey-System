@@ -144,6 +144,28 @@ RTC::ReturnCode_t Startup_Generation_After::onActivated(RTC::UniqueId /*ec_id*/)
     pose3.orientation.y = 0.0;
     m_target_list.push_back(pose3);
 
+    RTC::Pose3D pose4;
+    pose4.position.x = 0.2;
+    pose4.position.y = 0.0;
+    pose4.position.z = 0.21;
+
+    pose4.orientation.r = 0.0;
+    pose4.orientation.p = 0.0;
+    pose4.orientation.y = 0.0;
+    m_target_list.push_back(pose4);
+
+    RTC::Pose3D pose5;
+    pose5.position.x = 0.2;
+    pose5.position.y = 0.0;
+    pose5.position.z = 0.24;
+
+    pose5.orientation.r = 0.0;
+    pose5.orientation.p = 0.0;
+    pose5.orientation.y = 0.0;
+    m_target_list.push_back(pose5);
+
+
+
     return RTC::RTC_OK;
 }
 
@@ -205,8 +227,24 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
         }
         break;
 
-
     case 3://アームコンポーネントからの2回目の完了信号待ち
+
+        if (m_endcmd_from_ArmControllerIn.isNew()) {
+            m_endcmd_from_ArmControllerIn.read();
+
+            if (m_endcmd_from_ArmController.data == true) {
+                m_target_pose.data = m_target_list[3];
+                setTimestamp(m_target_pose); // 現在時刻を付与
+                m_target_poseOut.write();
+
+                m_step = 4;
+                std::cout << "第四座標を送信" << std::endl;
+            }
+        }
+        break;
+
+
+    case 4://アームコンポーネントからの2回目の完了信号待ち
 
         if (m_endcmd_from_ArmControllerIn.isNew()) {
             m_endcmd_from_ArmControllerIn.read();
@@ -217,29 +255,48 @@ RTC::ReturnCode_t Startup_Generation_After::onExecute(RTC::UniqueId /*ec_id*/)
                 setTimestamp(m_endcmd_to_HandController);
                 m_endcmd_to_HandControllerOut.write();
 
-                m_step = 4;
+                m_step = 5;
             }
         }
         break;
 
-    case 4:
+    case 5:
         if (m_endcmd_from_HandControllerIn.isNew()) {
             m_endcmd_from_HandControllerIn.read();
 
             if (m_endcmd_from_HandController.data == true) {
                 std::cout << "ハンドコンポーネントからの開放完了通知を受信" << std::endl;
 
-                m_endcmd.data = true;
-                setTimestamp(m_endcmd); // 完了通知にも現在時刻を付与
-                m_endcmdOut.write();
+                m_target_pose.data = m_target_list[4];
+                setTimestamp(m_target_pose); // 現在時刻を付与
+                m_target_poseOut.write();
+                std::cout << "第五座標を送信" << std::endl;
 
-                m_step = 5; 
-                std::cout << "動作完了" << std::endl;
+
+                m_step = 6;
+         
             }
         }
         break;
 
-    case 5:
+    case 6:
+        if (m_endcmd_from_ArmControllerIn.isNew()) {
+            m_endcmd_from_ArmControllerIn.read();
+
+            if (m_endcmd_from_ArmController.data == true) {
+
+                m_endcmd.data = true;
+                setTimestamp(m_endcmd); // 完了通知にも現在時刻を付与
+                m_endcmdOut.write();
+
+                m_step = 7;
+                std::cout << "動作完了" << std::endl;
+            }
+        }
+
+        break;
+
+    case 7:
         break;
     }
 
