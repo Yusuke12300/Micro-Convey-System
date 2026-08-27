@@ -45,6 +45,11 @@ rtcon /%NS%/Select_Target0.rtc:target_out1 /%NS%/Image_Recognition0.rtc:Target_I
 rtcon /%NS%/Image_Recognition0.rtc:target_point /%NS%/Startup_Generation_Before0.rtc:target_point
 rtcon /%NS%/Startup_Generation_After0.rtc:endcmd /%NS%/Path_Generation0.rtc:complete
 
+rtcon /%NS%/Path_Generation0.rtc:targetVelocity /%NS%/KobukiAIST0.rtc:targetVelocity
+rtcon /%NS%/KobukiAIST0.rtc:bumper /%NS%/Path_Generation0.rtc:bumper
+rtcon /%NS%/KobukiAIST0.rtc:currentPose /%NS%/Path_Generation0.rtc:currentPose
+
+
 echo.
 echo ==========================================
 echo 接続処理が完了しました。
