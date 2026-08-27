@@ -201,12 +201,12 @@ RTC::ReturnCode_t Arm_Controller::onExecute(RTC::UniqueId /*ec_id*/)
     JARA_ARM::CarPosWithElbow pose;
 
     // 姿勢は講習会サンプルと同じ固定姿勢
-    pose.carPos[0][0] = -1;
-    pose.carPos[0][1] = 0;
+    pose.carPos[0][0] = -0.7071;
+    pose.carPos[0][1] = -0.7071;
     pose.carPos[0][2] = 0;
 
-    pose.carPos[1][0] = 0;
-    pose.carPos[1][1] = 1;
+    pose.carPos[1][0] = -0.7071;
+    pose.carPos[1][1] = 0.7071;
     pose.carPos[1][2] = 0;
 
     pose.carPos[2][0] = 0;
