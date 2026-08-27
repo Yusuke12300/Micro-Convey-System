@@ -4,7 +4,7 @@
 
 # <rtc-template block="description">
 """
- @file Dummy_Vision.py
+ @file Dummy_hand_test.py
  @brief ModuleDescription
  @date $Date$
 
@@ -20,10 +20,6 @@ sys.path.append(".")
 import RTC
 import OpenRTM_aist
 
-# 以下の1行を手動で追加します
-import threading
-
-
 
 # Import Service implementation class
 # <rtc-template block="service_impl">
@@ -37,8 +33,8 @@ import threading
 
 # This module's spesification
 # <rtc-template block="module_spec">
-dummy_vision_spec = ["implementation_id", "Dummy_Vision", 
-         "type_name",         "Dummy_Vision", 
+dummy_hand_test_spec = ["implementation_id", "Dummy_hand_test", 
+         "type_name",         "Dummy_hand_test", 
          "description",       "ModuleDescription", 
          "version",           "1.0.0", 
          "vendor",            "VenderName", 
@@ -52,12 +48,12 @@ dummy_vision_spec = ["implementation_id", "Dummy_Vision",
 
 # <rtc-template block="component_description">
 ##
-# @class Dummy_Vision
+# @class Dummy_hand_test
 # @brief ModuleDescription
 # 
 # 
 # </rtc-template>
-class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
+class Dummy_hand_test(OpenRTM_aist.DataFlowComponentBase):
 	
     ##
     # @brief constructor
@@ -66,14 +62,14 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
     def __init__(self, manager):
         OpenRTM_aist.DataFlowComponentBase.__init__(self, manager)
 
-        self._d_target_point = OpenRTM_aist.instantiateDataType(RTC.TimedPoint3D)
+        self._d_target_id = OpenRTM_aist.instantiateDataType(RTC.TimedString)
         """
         """
-        self._target_pointOut = OpenRTM_aist.OutPort("target_point", self._d_target_point)
-
-        # ターゲットIDを受け取るInPortの準備（TimedString型）
-        self._d_target_id = RTC.TimedString(RTC.Time(0, 0), "")
-        self._target_idIn = OpenRTM_aist.InPort("target_id", self._d_target_id)
+        self._target_idOut = OpenRTM_aist.OutPort("target_id", self._d_target_id)
+        self._d_hand_start = OpenRTM_aist.instantiateDataType(RTC.TimedBoolean)
+        """
+        """
+        self._hand_startOut = OpenRTM_aist.OutPort("hand_start", self._d_hand_start)
 
 
 		
@@ -97,10 +93,10 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
         # Bind variables and configuration variable
 		
         # Set InPort buffers
-		# 新規のポート登録
-        self.addInPort("target_id", self._target_idIn)
+		
         # Set OutPort buffers
-        self.addOutPort("target_point",self._target_pointOut)
+        self.addOutPort("target_id",self._target_idOut)
+        self.addOutPort("hand_start",self._hand_startOut)
 		
         # Set service provider to Ports
 		
@@ -115,7 +111,7 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
     ## The finalize action (on ALIVE->END transition)
     ## 
     ## @return RTC::ReturnCode_t
-    #
+    ##
     ## 
     #def onFinalize(self):
     #
@@ -148,60 +144,65 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
     #
     #    return RTC.RTC_OK
 	
-    ###
     ##
-    ## The activated action (Active state entry action)
-    ##
-    ## @param ec_id target ExecutionContext Id
-    ## 
-    ## @return RTC::ReturnCode_t
-    ##
-    ##
-    #def onActivated(self, ec_id):
     #
-    #    return RTC.RTC_OK
-	
-    ###
-    ##
-    ## The deactivated action (Active state exit action)
-    ##
-    ## @param ec_id target ExecutionContext Id
-    ##
-    ## @return RTC::ReturnCode_t
-    ##
-    ##
-    #def onDeactivated(self, ec_id):
+    # The activated action (Active state entry action)
     #
-    #    return RTC.RTC_OK
-	
-    ###
-    ##
-    ## The execution action that is invoked periodically
-    ##
-    ## @param ec_id target ExecutionContext Id
-    ##
-    ## @return RTC::ReturnCode_t
-    ##
-    ##
-    def onExecute(self, ec_id):
-    # 新しいIDが届いているか確認[cite: 1]
-        if self._target_idIn.isNew():
-            # データを読み込む[cite: 1]
-            id_data = self._target_idIn.read()
-            print(f"ターゲットID [{id_data.data}] を受信しました！")
-        return RTC.RTC_OK
+    # @param ec_id target ExecutionContext Id
+    # 
+    # @return RTC::ReturnCode_t
+    #
+    #
+    def onActivated(self, ec_id):
 
-    # ===============================================
-    # 【追加】cmdから呼ばれる独自の送信関数
-    # ===============================================
-    def send_coordinates(self, x, y, z):
-        self._d_target_point.data.x = x
-        self._d_target_point.data.y = y
-        self._d_target_point.data.z = z
-        
-        OpenRTM_aist.setTimestamp(self._d_target_point)
-        self._target_pointOut.write()
-        print(f"\n[送信完了] 座標 (X:{x}, Y:{y}, Z:{z}) を送信しました！\n")
+        print("================================")
+        print(" Dummy_hand_test Activated")
+        print("================================")
+
+        # ① 対象物ID t1 を送信
+        self._d_target_id.data = "t1"
+        OpenRTM_aist.setTimestamp(self._d_target_id)
+        self._target_idOut.write()
+
+        print("[Dummy_hand_test] target_id = t1 sent")
+
+        # Hand_ControllerがIDを受信する時間を少し確保
+        time.sleep(1)
+
+        # ② ハンド動作開始指令を送信
+        self._d_hand_start.data = True
+        OpenRTM_aist.setTimestamp(self._d_hand_start)
+        self._hand_startOut.write()
+
+        print("[Dummy_hand_test] hand_start = true sent")
+
+        return RTC.RTC_OK
+	
+    ##
+    #
+    # The deactivated action (Active state exit action)
+    #
+    # @param ec_id target ExecutionContext Id
+    #
+    # @return RTC::ReturnCode_t
+    #
+    #
+    def onDeactivated(self, ec_id):
+    
+        return RTC.RTC_OK
+	
+    ##
+    #
+    # The execution action that is invoked periodically
+    #
+    # @param ec_id target ExecutionContext Id
+    #
+    # @return RTC::ReturnCode_t
+    #
+    #
+    def onExecute(self, ec_id):
+    
+        return RTC.RTC_OK
 	
     ###
     ##
@@ -250,7 +251,6 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
     ##
     ## @return RTC::ReturnCode_t
     ##
-
     ##
     #def onStateUpdate(self, ec_id):
     #
@@ -272,14 +272,14 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
 
 
 
-def Dummy_VisionInit(manager):
-    profile = OpenRTM_aist.Properties(defaults_str=dummy_vision_spec)
+def Dummy_hand_testInit(manager):
+    profile = OpenRTM_aist.Properties(defaults_str=dummy_hand_test_spec)
     manager.registerFactory(profile,
-                            Dummy_Vision,
+                            Dummy_hand_test,
                             OpenRTM_aist.Delete)
 
 def MyModuleInit(manager):
-    Dummy_VisionInit(manager)
+    Dummy_hand_testInit(manager)
 
     # create instance_name option for createComponent()
     instance_name = [i for i in sys.argv if "--instance_name=" in i]
@@ -289,42 +289,16 @@ def MyModuleInit(manager):
         args = ""
   
     # Create a component
-    comp = manager.createComponent("Dummy_Vision" + args)
+    comp = manager.createComponent("Dummy_hand_test" + args)
 
 def main():
+    # remove --instance_name= option
+    argv = [i for i in sys.argv if not "--instance_name=" in i]
+    # Initialize manager
     mgr = OpenRTM_aist.Manager.init(sys.argv)
     mgr.setModuleInitProc(MyModuleInit)
     mgr.activateManager()
-
-    # --- ここから書き換え ---
-    
-    # MyModuleInitで生成されたRTCインスタンスを取得する
-    comp = mgr.getComponents()[0]
-
-    # mgr.runManager() を別スレッドで動かす（通信を止めないため）[cite: 3]
-    rtc_thread = threading.Thread(target=mgr.runManager, daemon=True)
-    rtc_thread.start()
-
-    print("=== ダミー画像認識RTC 起動 ===")
-    print("※終了するには Ctrl+C を押してください")
-    
-    # メインスレッドでは cmd からの入力を無限ループで待ち受ける
-    while True:
-        try:
-            print("-" * 30)
-            # アーム制御側がメートル(m)単位のため、入力もメートルを想定
-            x = float(input("目標の X座標(m) を入力: "))
-            y = float(input("目標の Y座標(m) を入力: "))
-            z = float(input("目標の Z座標(m) を入力: "))
-            
-            # 追加した送信関数を呼び出す
-            comp.send_coordinates(x, y, z)
-            
-        except ValueError:
-            print("\n※エラー: 正しい数値を入力してください！")
-        except KeyboardInterrupt:
-            print("\n終了します。")
-            break
+    mgr.runManager()
 
 if __name__ == "__main__":
     main()

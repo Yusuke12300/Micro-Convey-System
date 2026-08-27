@@ -4,7 +4,7 @@
 
 # <rtc-template block="description">
 """
- @file Dummy_Vision.py
+ @file Select_Target_re.py
  @brief ModuleDescription
  @date $Date$
 
@@ -20,8 +20,10 @@ sys.path.append(".")
 import RTC
 import OpenRTM_aist
 
-# 以下の1行を手動で追加します
+#tkinterというGUIライブラリをインポート
 import threading
+import tkinter as tk
+import sys
 
 
 
@@ -37,8 +39,8 @@ import threading
 
 # This module's spesification
 # <rtc-template block="module_spec">
-dummy_vision_spec = ["implementation_id", "Dummy_Vision", 
-         "type_name",         "Dummy_Vision", 
+select_target_re_spec = ["implementation_id", "Select_Target_re", 
+         "type_name",         "Select_Target_re", 
          "description",       "ModuleDescription", 
          "version",           "1.0.0", 
          "vendor",            "VenderName", 
@@ -52,12 +54,12 @@ dummy_vision_spec = ["implementation_id", "Dummy_Vision",
 
 # <rtc-template block="component_description">
 ##
-# @class Dummy_Vision
+# @class Select_Target_re
 # @brief ModuleDescription
 # 
 # 
 # </rtc-template>
-class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
+class Select_Target_re(OpenRTM_aist.DataFlowComponentBase):
 	
     ##
     # @brief constructor
@@ -66,14 +68,18 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
     def __init__(self, manager):
         OpenRTM_aist.DataFlowComponentBase.__init__(self, manager)
 
-        self._d_target_point = OpenRTM_aist.instantiateDataType(RTC.TimedPoint3D)
+        self._d_target_id_out1 = OpenRTM_aist.instantiateDataType(RTC.TimedString)
         """
         """
-        self._target_pointOut = OpenRTM_aist.OutPort("target_point", self._d_target_point)
-
-        # ターゲットIDを受け取るInPortの準備（TimedString型）
-        self._d_target_id = RTC.TimedString(RTC.Time(0, 0), "")
-        self._target_idIn = OpenRTM_aist.InPort("target_id", self._d_target_id)
+        self._target_id_out1Out = OpenRTM_aist.OutPort("target_id_out1", self._d_target_id_out1)
+        self._d_target_id_out2 = OpenRTM_aist.instantiateDataType(RTC.TimedString)
+        """
+        """
+        self._target_id_out2Out = OpenRTM_aist.OutPort("target_id_out2", self._d_target_id_out2)
+        self._d_target_id_out3 = OpenRTM_aist.instantiateDataType(RTC.TimedString)
+        """
+        """
+        self._target_id_out3Out = OpenRTM_aist.OutPort("target_id_out3", self._d_target_id_out3)
 
 
 		
@@ -97,10 +103,11 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
         # Bind variables and configuration variable
 		
         # Set InPort buffers
-		# 新規のポート登録
-        self.addInPort("target_id", self._target_idIn)
+		
         # Set OutPort buffers
-        self.addOutPort("target_point",self._target_pointOut)
+        self.addOutPort("target_id_out1",self._target_id_out1Out)
+        self.addOutPort("target_id_out2",self._target_id_out2Out)
+        self.addOutPort("target_id_out3",self._target_id_out3Out)
 		
         # Set service provider to Ports
 		
@@ -183,26 +190,30 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
     ## @return RTC::ReturnCode_t
     ##
     ##
-    def onExecute(self, ec_id):
-    # 新しいIDが届いているか確認[cite: 1]
-        if self._target_idIn.isNew():
-            # データを読み込む[cite: 1]
-            id_data = self._target_idIn.read()
-            print(f"ターゲットID [{id_data.data}] を受信しました！")
-        return RTC.RTC_OK
+    #def onExecute(self, ec_id):
+    #
+    #    return RTC.RTC_OK
 
+	# ===============================================
+    # 【追加】UIのボタンが押されたときに呼ばれる関数
     # ===============================================
-    # 【追加】cmdから呼ばれる独自の送信関数
-    # ===============================================
-    def send_coordinates(self, x, y, z):
-        self._d_target_point.data.x = x
-        self._d_target_point.data.y = y
-        self._d_target_point.data.z = z
-        
-        OpenRTM_aist.setTimestamp(self._d_target_point)
-        self._target_pointOut.write()
-        print(f"\n[送信完了] 座標 (X:{x}, Y:{y}, Z:{z}) を送信しました！\n")
-	
+    def send_target(self, target_id):
+        # 1つ目のポート (target_out1) に送信
+        self._d_target_out1.data = target_id
+        OpenRTM_aist.setTimestamp(self._d_target_out1)
+        self._target_out1Out.write()
+
+        # 2つ目のポート (target_out2) にも同じデータを送信
+        self._d_target_out2.data = target_id
+        OpenRTM_aist.setTimestamp(self._d_target_out2)
+        self._target_out2Out.write()
+
+        # 3つ目のポート (target_out3) にも同じデータを送信
+        self._d_target_out3.data = target_id
+        OpenRTM_aist.setTimestamp(self._d_target_out3)
+        self._target_out3Out.write()
+
+        print(f"[RTC] 3つのポートから同時に送信しました: {target_id}")
     ###
     ##
     ## The aborting action when main logic error occurred.
@@ -272,14 +283,61 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
 
 
 
-def Dummy_VisionInit(manager):
-    profile = OpenRTM_aist.Properties(defaults_str=dummy_vision_spec)
+def Select_Target_reInit(manager):
+    profile = OpenRTM_aist.Properties(defaults_str=select_target_re_spec)
     manager.registerFactory(profile,
-                            Dummy_Vision,
+                            Select_Target_re,
                             OpenRTM_aist.Delete)
+# ===============================================
+# 【追加】TkinterのUIクラス
+# ===============================================
+class TargetSelectionUI:
+    def __init__(self, rtc_instance):
+        self.rtc = rtc_instance
+        self.root = tk.Tk()
+        self.root.title("ターゲット選択")
+        self.root.geometry("300x300")
+
+        label = tk.Label(self.root, text="ターゲットを選択してください", font=("Arial", 12))
+        label.pack(pady=10)
+
+        # 送信ボタン t1
+        btn_t1 = tk.Button(self.root, text="ターゲット t1 を送信", 
+                           command=lambda: self.on_button_click("t1"))
+        btn_t1.pack(pady=5, fill=tk.X, padx=20)
+
+        # 送信ボタン t2
+        btn_t2 = tk.Button(self.root, text="ターゲット t2 を送信", 
+                           command=lambda: self.on_button_click("t2"))
+        btn_t2.pack(pady=5, fill=tk.X, padx=20)
+
+        # 送信ボタン t3
+        btn_t3 = tk.Button(self.root, text="ターゲット t3 を送信", 
+                           command=lambda: self.on_button_click("t3"))
+        btn_t3.pack(pady=5, fill=tk.X, padx=20)
+           
+        # 送信ボタン t4
+        btn_t4 = tk.Button(self.root, text="ターゲット t4 を送信", 
+                           command=lambda: self.on_button_click("t4"))
+        btn_t4.pack(pady=5, fill=tk.X, padx=20)
+
+        # ウィンドウを閉じたときの処理
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def on_button_click(self, target_id):
+        print(f"[UI] ボタン押下: {target_id}")
+        self.rtc.send_target(target_id)  # 上で作った送信関数を呼ぶ
+
+    def on_closing(self):
+        self.root.destroy()
+        sys.exit() # プログラム全体を終了
+
+    def run(self):
+        self.root.mainloop()
+
 
 def MyModuleInit(manager):
-    Dummy_VisionInit(manager)
+    Select_Target_reInit(manager)
 
     # create instance_name option for createComponent()
     instance_name = [i for i in sys.argv if "--instance_name=" in i]
@@ -289,42 +347,28 @@ def MyModuleInit(manager):
         args = ""
   
     # Create a component
-    comp = manager.createComponent("Dummy_Vision" + args)
+    comp = manager.createComponent("Select_Target_re" + args)
 
 def main():
+    # remove --instance_name= option
+    argv = [i for i in sys.argv if not "--instance_name=" in i]
+    # Initialize manager
     mgr = OpenRTM_aist.Manager.init(sys.argv)
     mgr.setModuleInitProc(MyModuleInit)
     mgr.activateManager()
-
+    #mgr.runManager()
     # --- ここから書き換え ---
     
     # MyModuleInitで生成されたRTCインスタンスを取得する
     comp = mgr.getComponents()[0]
 
-    # mgr.runManager() を別スレッドで動かす（通信を止めないため）[cite: 3]
+    # mgr.runManager() を別スレッドで動かす（UIを止めないため）
     rtc_thread = threading.Thread(target=mgr.runManager, daemon=True)
     rtc_thread.start()
 
-    print("=== ダミー画像認識RTC 起動 ===")
-    print("※終了するには Ctrl+C を押してください")
-    
-    # メインスレッドでは cmd からの入力を無限ループで待ち受ける
-    while True:
-        try:
-            print("-" * 30)
-            # アーム制御側がメートル(m)単位のため、入力もメートルを想定
-            x = float(input("目標の X座標(m) を入力: "))
-            y = float(input("目標の Y座標(m) を入力: "))
-            z = float(input("目標の Z座標(m) を入力: "))
-            
-            # 追加した送信関数を呼び出す
-            comp.send_coordinates(x, y, z)
-            
-        except ValueError:
-            print("\n※エラー: 正しい数値を入力してください！")
-        except KeyboardInterrupt:
-            print("\n終了します。")
-            break
+    # TkinterのUIを起動し、取得したRTCインスタンスを渡す
+    ui = TargetSelectionUI(comp)
+    ui.run()
 
 if __name__ == "__main__":
     main()

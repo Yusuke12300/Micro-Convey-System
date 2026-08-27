@@ -1,4 +1,4 @@
-﻿# Hand_Controller
+﻿# Dummy_hand_test
 
 ## Overview
 
@@ -20,11 +20,11 @@ ModuleDescription
 
 |  |  |
 ----|---- 
-| Module Name | Hand_Controller |
+| Module Name | Dummy_hand_test |
 | Description | ModuleDescription |
 | Version | 1.0.0 |
 | Vendor | VenderName |
-| Category | Controller |
+| Category | Category |
 | Comp. Type | STATIC |
 | Act. Type | PERIODIC |
 | Kind | DataFlowComponent |
@@ -133,41 +133,8 @@ ModuleDescription
 
 ### InPorts definition
 
-#### hand_start
 
-
-
-<table>
-  <tr>
-    <td>DataType</td>
-    <td>RTC::TimedBoolean</td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>IDL file</td>
-    <td colspan="2">BasicDataType.idl</td>
-  </tr>
-  <tr>
-    <td>Number of Data</td>
-    <td colspan="2"></td>
-  </tr>
-  <tr>
-    <td>Semantics</td>
-    <td colspan="2"></td>
-  </tr>
-  <tr>
-    <td>Unit</td>
-    <td colspan="2"></td>
-  </tr>
-  <tr>
-    <td>Occirrence frecency Period</td>
-    <td colspan="2"></td>
-  </tr>
-  <tr>
-    <td>Operational frecency Period</td>
-    <td colspan="2"></td>
-  </tr>
-</table>
+### OutPorts definition
 
 #### target_id
 
@@ -205,10 +172,7 @@ ModuleDescription
   </tr>
 </table>
 
-
-### OutPorts definition
-
-#### hand_end
+#### hand_start
 
 
 
@@ -246,57 +210,6 @@ ModuleDescription
 
 
 ### Service Port definition
-
-#### middle
-
-
-
-<table>
-  <tr>
-    <td>I/F Description</td>
-    <td colspan="2"></td>
-  </tr>
-  <tr>
-    <td colspan="3">Interface</td>
-  </tr>
-  <tr>
-    <td rowspan="9">JARA_ARM_ManipulatorCommonInterface_Middle</td>
-    <td>Type</td>
-    <td>JARA_ARM::ManipulatorCommonInterface_Middle</td>
-    <tr>
-      <td>Direction</td>
-      <td>Consumer</td>
-    </tr>
-    <tr>
-      <td>Description</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>IDL file</td>
-      <td>ManipulatorCommonInterface_Middle.idl</td>
-    </tr>
-    <tr>
-      <td>Argument</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Return Value</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Exception</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>PreCondition</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>PostCondition</td>
-      <td></td>
-    </tr>
-  </tr>
-</table>
 
 
 ### Configuration definition
