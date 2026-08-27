@@ -46,7 +46,6 @@ Hand_Controller::Hand_Controller(RTC::Manager* manager)
   : RTC::DataFlowComponentBase(manager),
     m_hand_startIn("hand_start", m_hand_start),
     m_target_idIn("target_id", m_target_id),
-    m_hand_releaseIn("hand_release", m_hand_release),
     m_hand_endOut("hand_end", m_hand_end),
     m_middlePort("middle")
     // </rtc-template>
@@ -69,7 +68,6 @@ RTC::ReturnCode_t Hand_Controller::onInitialize()
   // Set InPort buffers
   addInPort("hand_start", m_hand_startIn);
   addInPort("target_id", m_target_idIn);
-  addInPort("hand_release", m_hand_releaseIn);
   
   // Set OutPort buffer
   addOutPort("hand_end", m_hand_endOut);
@@ -142,18 +140,23 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
 
 
   // ==========================================
-  // 把持開始指令
+  // ハンド動作指令を受信
   // ==========================================
   if (m_hand_startIn.isNew())
   {
     m_hand_startIn.read();
 
+
+    // ========================================
+    // true : 把持
+    // ========================================
     if (m_hand_start.data == true)
     {
       std::cout << "[Hand_Controller] GRASP command received"
                 << std::endl;
 
       int gripper_value = -1;
+
 
       // 対象物IDごとの把持開度
       if (current_target_id == "t1")
@@ -162,21 +165,21 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
       }
       else if (current_target_id == "t2")
       {
-        // 後で設定
+        // gripper_value = ○○;
       }
       else if (current_target_id == "t3")
       {
-        // 後で設定
+        // gripper_value = ○○;
       }
       else if (current_target_id == "t4")
       {
-        // 後で設定
+        // gripper_value = ○○;
       }
 
 
       if (gripper_value >= 0)
       {
-        // ① 最大まで開く
+        // ① まず最大まで開く
         std::cout << "[Hand_Controller] Open gripper: 100"
                   << std::endl;
 
@@ -197,7 +200,7 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
           ->moveGripper(gripper_value);
 
 
-        // ③ 把持完了通知
+        // ③ 把持動作完了
         m_hand_end.data = true;
         m_hand_endOut.write();
 
@@ -214,30 +217,25 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
                   << std::endl;
       }
     }
-  }
 
 
-  // ==========================================
-  // 解放開始指令
-  // ==========================================
-  if (m_hand_releaseIn.isNew())
-  {
-    m_hand_releaseIn.read();
-
-    if (m_hand_release.data == true)
+    // ========================================
+    // false : 解放
+    // ========================================
+    else
     {
       std::cout << "[Hand_Controller] RELEASE command received"
                 << std::endl;
 
-      // 最大まで開いて対象物を離す
-      std::cout << "[Hand_Controller] Open gripper: 100"
-                << std::endl;
-
+      // 最大まで開く
       m_JARA_ARM_ManipulatorCommonInterface_Middle
         ->moveGripper(100);
 
+      std::cout << "[Hand_Controller] Open gripper: 100"
+                << std::endl;
 
-      // 解放完了通知
+
+      // 解放動作完了
       m_hand_end.data = true;
       m_hand_endOut.write();
 
@@ -248,7 +246,6 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
                 << std::endl;
     }
   }
-
 
   return RTC::RTC_OK;
 }
