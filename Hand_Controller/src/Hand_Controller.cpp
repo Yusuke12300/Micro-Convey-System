@@ -114,6 +114,10 @@ RTC::ReturnCode_t Hand_Controller::onFinalize()
 
 RTC::ReturnCode_t Hand_Controller::onActivated(RTC::UniqueId /*ec_id*/)
 {
+  // 前回の対象物IDをクリア
+  current_target_id = "";
+
+  std::cout << "[Hand_Controller] Activated" << std::endl;
   return RTC::RTC_OK;
 }
 
