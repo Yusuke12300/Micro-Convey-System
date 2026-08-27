@@ -9,6 +9,11 @@
 
 #include "Hand_Controller.h"
 
+#include <iostream>
+#include <string>
+
+static std::string current_target_id = "";
+
 // Module specification
 // <rtc-template block="module_spec">
 #if RTM_MAJOR_VERSION >= 2
@@ -119,6 +124,88 @@ RTC::ReturnCode_t Hand_Controller::onDeactivated(RTC::UniqueId /*ec_id*/)
 
 RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
 {
+  // 対象物IDを受信して保持
+  if (m_target_idIn.isNew())
+  {
+    m_target_idIn.read();
+
+    current_target_id = m_target_id.data;
+
+    std::cout << "[Hand_Controller] target_id received: "
+              << current_target_id
+              << std::endl;
+  }
+
+
+  // ハンド動作開始指令を受信
+  if (m_hand_startIn.isNew())
+  {
+    m_hand_startIn.read();
+
+    if (m_hand_start.data == true)
+    {
+      std::cout << "[Hand_Controller] hand_start received"
+                << std::endl;
+
+      int gripper_value = -1;
+
+
+      // 対象物IDごとの把持開度
+      if (current_target_id == "t1")
+      {
+        gripper_value = 67;
+      }
+      else if (current_target_id == "t2")
+      {
+        // 後で設定
+        // gripper_value = ○○;
+      }
+      else if (current_target_id == "t3")
+      {
+        // 後で設定
+        // gripper_value = ○○;
+      }
+      else if (current_target_id == "t4")
+      {
+        // 後で設定
+        // gripper_value = ○○;
+      }
+
+
+      // 有効なIDだった場合のみハンドを動かす
+      if (gripper_value >= 0)
+      {
+        std::cout << "[Hand_Controller] target_id = "
+                  << current_target_id
+                  << std::endl;
+
+        std::cout << "[Hand_Controller] gripper_value = "
+                  << gripper_value
+                  << std::endl;
+
+        // myCobotRTCへグリッパ開度を指令
+        m_JARA_ARM_ManipulatorCommonInterface_Middle
+          ->moveGripper(gripper_value);
+
+        std::cout << "[Hand_Controller] gripper completed"
+                  << std::endl;
+
+        // ハンド動作完了通知
+        m_hand_end.data = true;
+        m_hand_endOut.write();
+
+        std::cout << "[Hand_Controller] hand_end sent"
+                  << std::endl;
+      }
+      else
+      {
+        std::cout << "[Hand_Controller] Unknown target_id: "
+                  << current_target_id
+                  << std::endl;
+      }
+    }
+  }
+
   return RTC::RTC_OK;
 }
 
