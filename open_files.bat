@@ -20,7 +20,7 @@ REM ------------------------------------------------
 REM 【3】Python コンポーネント
 REM ------------------------------------------------
 start "SelectTarget" /D "%~dp0Select_Target" python "Select_Target.py" -o "naming.formats:%%n.rtc"
-start "ImageRecog" /D "%~dp0Image_Recognition" python "Image_Recognition.py" -o "naming.formats:%%n.rtc"
+start "ImageRecog" /D "%~dp0Image_Recognition_ver2" python "Image_Recognition.py" -o "naming.formats:%%n.rtc"
 start "StartupBefore" /D "%~dp0Startup_Generation_Before" python "Startup_Generation_Before.py" -o "naming.formats:%%n.rtc"
 start "myCobot" /D "%~dp0choreonoid\myCobotRTC" python "myCobot.py" -o "naming.formats:%%n.rtc"
 
