@@ -71,6 +71,10 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
         """
         self._target_pointOut = OpenRTM_aist.OutPort("target_point", self._d_target_point)
 
+        # ターゲットIDを受け取るInPortの準備（TimedString型）
+        self._d_target_id = RTC.TimedString(RTC.Time(0, 0), "")
+        self._target_idIn = OpenRTM_aist.InPort("target_id", self._d_target_id)
+
 
 		
 
@@ -93,7 +97,8 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
         # Bind variables and configuration variable
 		
         # Set InPort buffers
-		
+		# 新規のポート登録
+        self.addInPort("target_id", self._target_idIn)
         # Set OutPort buffers
         self.addOutPort("target_point",self._target_pointOut)
 		
@@ -178,9 +183,13 @@ class Dummy_Vision(OpenRTM_aist.DataFlowComponentBase):
     ## @return RTC::ReturnCode_t
     ##
     ##
-    #def onExecute(self, ec_id):
-    
-        #return RTC.RTC_OK
+    def onExecute(self, ec_id):
+    # 新しいIDが届いているか確認[cite: 1]
+        if self._target_idIn.isNew():
+            # データを読み込む[cite: 1]
+            id_data = self._target_idIn.read()
+            print(f"ターゲットID [{id_data.data}] を受信しました！")
+        return RTC.RTC_OK
 
     # ===============================================
     # 【追加】cmdから呼ばれる独自の送信関数
