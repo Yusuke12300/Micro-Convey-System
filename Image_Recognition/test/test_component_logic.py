@@ -171,13 +171,17 @@ class ComponentLogicTests(unittest.TestCase):
         self.component._samples.extend(
             [
                 DetectionSample(0.72, (1.0, 2.0, 3.0), 1.0),
-                DetectionSample(0.94, (4.0, 5.0, 6.0), 2.0),
+                DetectionSample(0.94, (4.12354, -5.67856, 6.00049), 2.0),
                 DetectionSample(0.81, (7.0, 8.0, 9.0), 3.0),
             ]
         )
         self.component._publish_if_ready(time.monotonic())
         point = self.component._d_Coordinate.data
-        self.assertEqual((point.x, point.y, point.z), (4.0, 5.0, 6.0))
+        self.assertEqual((point.x, point.y, point.z), (4.124, -5.679, 6.0))
+        self.assertEqual(
+            self.component._last_detection_overlay["point_output_m"],
+            (4.124, -5.679, 6.0),
+        )
         self.assertEqual(self.component._Target_Coordinate_OutOut.write_count, 1)
         self.assertIsNone(self.component._active_target_id)
         self.assertIn("Sent to target_point", self.component._last_output_status["text"])

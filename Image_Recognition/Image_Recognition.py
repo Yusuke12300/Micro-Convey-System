@@ -952,9 +952,9 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                             (0, 255, 0),
                         ),
                         ("Frame: {}".format(self._output_frame), (0, 255, 0)),
-                        ("X [m]: {:+.4f}".format(x), (0, 255, 0)),
-                        ("Y [m]: {:+.4f}".format(y), (0, 255, 0)),
-                        ("Z [m]: {:+.4f}".format(z), (0, 255, 0)),
+                        ("X [m]: {:+.3f}".format(x), (0, 255, 0)),
+                        ("Y [m]: {:+.3f}".format(y), (0, 255, 0)),
+                        ("Z [m]: {:+.3f}".format(z), (0, 255, 0)),
                         (
                             "Confidence: {:.3f}".format(overlay["confidence"]),
                             (0, 255, 0),
@@ -1055,9 +1055,12 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
                 self._geometry_settings.stable_cluster_radius_m * 1000.0,
             )
             return
+        point_output_m = tuple(
+            round(float(value), 3) for value in best.point_output_m
+        )
         self._set_detection_overlay(
             self._active_target_id,
-            best.point_output_m,
+            point_output_m,
             best.confidence,
             self._sample_pixels.get(best.captured_at),
             self._sample_bounding_boxes.get(best.captured_at),
@@ -1065,9 +1068,9 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
             self._sample_edge_metrics.get(best.captured_at),
             now,
         )
-        self._d_Coordinate.data.x = best.point_output_m[0]
-        self._d_Coordinate.data.y = best.point_output_m[1]
-        self._d_Coordinate.data.z = best.point_output_m[2]
+        self._d_Coordinate.data.x = point_output_m[0]
+        self._d_Coordinate.data.y = point_output_m[1]
+        self._d_Coordinate.data.z = point_output_m[2]
         OpenRTM_aist.setTimestamp(self._d_Coordinate)
         write_succeeded = self._Target_Coordinate_OutOut.write()
         if not write_succeeded:
@@ -1095,10 +1098,10 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
         )
         LOGGER.info(
             "target_point [%s frame]: %s "
-            "(%.6f, %.6f, %.6f) m, confidence %.3f",
+            "(%.3f, %.3f, %.3f) m, confidence %.3f",
             self._output_frame,
             self._active_target_id,
-            *best.point_output_m,
+            *point_output_m,
             best.confidence,
         )
         self._finish_request()
