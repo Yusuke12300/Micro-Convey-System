@@ -232,6 +232,10 @@ class Hand_ControllerTest
   /*!
    */
   RTC::OutPort<RTC::TimedBoolean> m_hand_startOut;
+  RTC::TimedString m_target_id;
+  /*!
+   */
+  RTC::OutPort<RTC::TimedString> m_target_idOut;
   
   // </rtc-template>
 

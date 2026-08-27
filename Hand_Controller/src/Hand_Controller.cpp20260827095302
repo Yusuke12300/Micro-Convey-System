@@ -40,7 +40,6 @@ Hand_Controller::Hand_Controller(RTC::Manager* manager)
     // <rtc-template block="initializer">
   : RTC::DataFlowComponentBase(manager),
     m_hand_startIn("hand_start", m_hand_start),
-    m_target_idIn("target_id", m_target_id),
     m_hand_endOut("hand_end", m_hand_end),
     m_middlePort("middle")
     // </rtc-template>
@@ -62,7 +61,6 @@ RTC::ReturnCode_t Hand_Controller::onInitialize()
   // <rtc-template block="registration">
   // Set InPort buffers
   addInPort("hand_start", m_hand_startIn);
-  addInPort("target_id", m_target_idIn);
   
   // Set OutPort buffer
   addOutPort("hand_end", m_hand_endOut);
