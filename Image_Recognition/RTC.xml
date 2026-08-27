@@ -89,7 +89,7 @@
             </rtc:Constraint>
             <rtcExt:Properties rtcExt:value="spin.1" rtcExt:name="__widget__"/>
         </rtc:Configuration>
-        <rtc:Configuration xsi:type="rtcExt:configuration_ext" rtcExt:variableName="" rtc:unit="" rtc:defaultValue="0.2" rtc:type="double" rtc:name="min_depth_m">
+        <rtc:Configuration xsi:type="rtcExt:configuration_ext" rtcExt:variableName="" rtc:unit="" rtc:defaultValue="0.35" rtc:type="double" rtc:name="min_depth_m">
             <rtc:Constraint>
                 <rtc:ConstraintUnitType>
                     <rtc:And>
@@ -112,7 +112,7 @@
             </rtc:Constraint>
             <rtcExt:Properties rtcExt:value="spin.0.1" rtcExt:name="__widget__"/>
         </rtc:Configuration>
-        <rtc:Configuration xsi:type="rtcExt:configuration_ext" rtcExt:variableName="" rtc:unit="" rtc:defaultValue="2.0" rtc:type="double" rtc:name="max_depth_m">
+        <rtc:Configuration xsi:type="rtcExt:configuration_ext" rtcExt:variableName="" rtc:unit="" rtc:defaultValue="0.55" rtc:type="double" rtc:name="max_depth_m">
             <rtc:Constraint>
                 <rtc:ConstraintUnitType>
                     <rtc:And>
@@ -140,6 +140,6 @@
         </rtc:Configuration>
     </rtc:ConfigurationSet>
     <rtc:DataPorts xsi:type="rtcExt:dataport_ext" rtcExt:position="LEFT" rtcExt:variableName="Target" rtc:unit="" rtc:subscriptionType="" rtc:dataflowType="" rtc:interfaceType="" rtc:idlFile="&lt;RTM_ROOT&gt;\rtm\idl\BasicDataType.idl" rtc:type="RTC::TimedString" rtc:name="Target_In1" rtc:portType="DataInPort"/>
-    <rtc:DataPorts xsi:type="rtcExt:dataport_ext" rtcExt:position="RIGHT" rtcExt:variableName="Coordinate" rtc:unit="" rtc:subscriptionType="" rtc:dataflowType="" rtc:interfaceType="" rtc:idlFile="&lt;RTM_ROOT&gt;\rtm\idl\ExtendedDataTypes.idl" rtc:type="RTC::TimedPoint3D" rtc:name="Target_Coordinate_Out" rtc:portType="DataOutPort"/>
+    <rtc:DataPorts xsi:type="rtcExt:dataport_ext" rtcExt:position="RIGHT" rtcExt:variableName="Coordinate" rtc:unit="" rtc:subscriptionType="" rtc:dataflowType="" rtc:interfaceType="" rtc:idlFile="&lt;RTM_ROOT&gt;\rtm\idl\ExtendedDataTypes.idl" rtc:type="RTC::TimedPoint3D" rtc:name="target_point" rtc:portType="DataOutPort"/>
     <rtc:Language xsi:type="rtcExt:language_ext" rtc:kind="Python"/>
 </rtc:RtcProfile>

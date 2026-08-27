@@ -68,6 +68,7 @@ class GeometryDetection:
     observed_dimensions_mm: tuple[float, float, float]
     pixel_area: int
     bounding_box_xyxy: tuple[int, int, int, int]
+    detection_mode: str = "depth"
 
 
 @dataclass(frozen=True)
@@ -334,6 +335,49 @@ def load_geometry_configuration(
                 color_definition["min_ratio"] = min_ratio
                 color_definition["confidence_weight"] = confidence_weight
             definition["color"] = color_definition
+            fallback_definition = definition.get(
+                "color_fixed_depth_fallback", {"enabled": False}
+            )
+            if not isinstance(fallback_definition, dict):
+                raise ValueError(
+                    f"color_fixed_depth_fallback for {target_id} must be a mapping"
+                )
+            fallback_definition = dict(fallback_definition)
+            fallback_enabled = fallback_definition.get("enabled", False) is True
+            fallback_definition["enabled"] = fallback_enabled
+            if fallback_enabled:
+                if not color_enabled:
+                    raise ValueError(
+                        f"color_fixed_depth_fallback for {target_id} requires color"
+                    )
+                if visible_face_definition is None:
+                    raise ValueError(
+                        f"color_fixed_depth_fallback for {target_id} requires visible_face"
+                    )
+                default_distance_m = (
+                    float(distance_definition["expected_m"])
+                    if distance_definition is not None
+                    else 0.455
+                )
+                camera_distance_m = float(
+                    fallback_definition.get("camera_distance_m", default_distance_m)
+                )
+                fallback_confidence_threshold = float(
+                    fallback_definition.get("confidence_threshold", 0.60)
+                )
+                if camera_distance_m <= 0.0:
+                    raise ValueError(
+                        f"color_fixed_depth_fallback distance for {target_id} must be positive"
+                    )
+                if not 0.0 <= fallback_confidence_threshold <= 1.0:
+                    raise ValueError(
+                        f"color_fixed_depth_fallback confidence for {target_id} must be 0..1"
+                    )
+                fallback_definition["camera_distance_m"] = camera_distance_m
+                fallback_definition[
+                    "confidence_threshold"
+                ] = fallback_confidence_threshold
+            definition["color_fixed_depth_fallback"] = fallback_definition
         result[target_id] = definition
 
     missing = VALID_TARGET_IDS.difference(result)
@@ -610,6 +654,220 @@ def edge_support_ratio(
     return float(np.count_nonzero(boundary & nearby_edges)) / float(boundary_count)
 
 
+def _target_color_mask(
+    color_bgr: np.ndarray, color_definition: Mapping[str, Any]
+) -> np.ndarray:
+    """Build one HSV target mask from either normalized or legacy ranges."""
+
+    hsv = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2HSV)
+    hsv_ranges = color_definition.get("hsv_ranges")
+    if hsv_ranges is None:
+        hsv_ranges = [
+            {
+                "lower": color_definition["hsv_lower"],
+                "upper": color_definition["hsv_upper"],
+            }
+        ]
+    color_mask = np.zeros(color_bgr.shape[:2], dtype=bool)
+    for hsv_range in hsv_ranges:
+        color_mask |= cv2.inRange(
+            hsv,
+            np.asarray(hsv_range["lower"], dtype=np.uint8),
+            np.asarray(hsv_range["upper"], dtype=np.uint8),
+        ) > 0
+    return color_mask
+
+
+def detect_target_from_color_at_fixed_depth(
+    color_bgr: np.ndarray,
+    intrinsics: CameraIntrinsics,
+    target_id: str,
+    target_definition: Mapping[str, Any],
+    settings: DetectorSettings,
+    confidence_threshold: float,
+) -> Optional[GeometryDetection]:
+    """Detect by color/known size when the target has no usable depth pixels."""
+
+    fallback = target_definition.get("color_fixed_depth_fallback", {})
+    color_definition = target_definition.get("color", {})
+    visible_face_definition = target_definition.get("visible_face")
+    if (
+        fallback.get("enabled") is not True
+        or color_definition.get("enabled") is not True
+        or visible_face_definition is None
+        or color_bgr.ndim != 3
+        or color_bgr.shape[2] != 3
+    ):
+        return None
+
+    height, width = color_bgr.shape[:2]
+    x1, y1, x2, y2 = _clamp_roi(settings.roi_xyxy, width, height)
+    color_mask = _target_color_mask(color_bgr, color_definition)
+    roi_mask = np.zeros((height, width), dtype=bool)
+    roi_mask[y1:y2, x1:x2] = True
+    color_mask &= roi_mask
+    kernel = np.ones(
+        (settings.morphology_kernel_px, settings.morphology_kernel_px),
+        dtype=np.uint8,
+    )
+    component_mask = cv2.morphologyEx(
+        color_mask.astype(np.uint8), cv2.MORPH_OPEN, kernel
+    )
+    component_mask = cv2.morphologyEx(
+        component_mask, cv2.MORPH_CLOSE, kernel
+    )
+    component_count, labels, statistics, _ = cv2.connectedComponentsWithStats(
+        component_mask, connectivity=8
+    )
+
+    gray = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0.0)
+    color_edges = cv2.Canny(
+        gray,
+        settings.color_canny_low_threshold,
+        settings.color_canny_high_threshold,
+    ) > 0
+    fixed_depth_m = float(fallback["camera_distance_m"])
+    expected_face_mm = visible_face_definition["dimensions_mm"]
+    required_confidence = max(
+        float(confidence_threshold), float(fallback["confidence_threshold"])
+    )
+    best: Optional[GeometryDetection] = None
+
+    for label in range(1, component_count):
+        pixel_area = int(statistics[label, cv2.CC_STAT_AREA])
+        if (
+            pixel_area < settings.min_component_area_px
+            or pixel_area > settings.max_component_area_px
+        ):
+            continue
+        component = labels == label
+        pixel_y, pixel_x = np.nonzero(component)
+        pixel_rectangle = cv2.minAreaRect(
+            np.column_stack((pixel_x, pixel_y)).astype(np.float32)
+        )
+        pixel_rectangle_area = float(
+            pixel_rectangle[1][0] * pixel_rectangle[1][1]
+        )
+        if pixel_rectangle_area <= 0.0:
+            continue
+        rectangularity = min(1.0, pixel_area / pixel_rectangle_area)
+        if rectangularity < settings.min_rectangularity:
+            continue
+
+        plane_points = np.column_stack(
+            (
+                (pixel_x - intrinsics.ppx) * fixed_depth_m / intrinsics.fx,
+                (pixel_y - intrinsics.ppy) * fixed_depth_m / intrinsics.fy,
+            )
+        ).astype(np.float32)
+        rectangle_m = cv2.minAreaRect(plane_points)
+        face_a_m, face_b_m = (float(value) for value in rectangle_m[1])
+        if face_a_m <= 0.0 or face_b_m <= 0.0:
+            continue
+        observed_face_mm = tuple(
+            float(value)
+            for value in np.sort(
+                np.asarray([face_a_m, face_b_m], dtype=np.float64) * 1000.0
+            )
+        )
+        face_confidence = visible_face_confidence(
+            observed_face_mm,
+            expected_face_mm,
+            float(visible_face_definition["absolute_tolerance_mm"]),
+            float(visible_face_definition["relative_tolerance"]),
+        )
+        if face_confidence is None:
+            continue
+
+        remaining_dimensions = [
+            float(value) for value in target_definition["dimensions_mm"]
+        ]
+        for face_dimension in expected_face_mm:
+            nearest_index = int(
+                np.argmin(
+                    np.abs(
+                        np.asarray(remaining_dimensions, dtype=np.float64)
+                        - float(face_dimension)
+                    )
+                )
+            )
+            remaining_dimensions.pop(nearest_index)
+        known_thickness_mm = (
+            remaining_dimensions[0]
+            if remaining_dimensions
+            else min(target_definition["dimensions_mm"])
+        )
+        observed_dimensions_mm = tuple(
+            float(value)
+            for value in np.sort(
+                np.asarray(
+                    [observed_face_mm[0], observed_face_mm[1], known_thickness_mm]
+                )
+            )
+        )
+        geometry_confidence = dimension_confidence(
+            observed_dimensions_mm,
+            target_definition["dimensions_mm"],
+            settings.dimension_abs_tolerance_mm,
+            settings.dimension_relative_tolerance,
+        )
+        if geometry_confidence is None:
+            continue
+
+        color_edge_ratio = edge_support_ratio(
+            component, color_edges, settings.edge_search_radius_px
+        )
+        if color_edge_ratio < settings.min_color_edge_ratio:
+            continue
+        edge_reference = max(settings.min_color_edge_ratio, 0.05)
+        edge_score = min(1.0, color_edge_ratio / edge_reference)
+        confidence = float(
+            0.45 * geometry_confidence
+            + 0.35 * face_confidence
+            + 0.15 * rectangularity
+            + 0.05 * edge_score
+        )
+        if confidence < required_confidence:
+            continue
+
+        center_x_m, center_y_m = (float(value) for value in rectangle_m[0])
+        candidate = GeometryDetection(
+            target_id=target_id,
+            confidence=confidence,
+            geometry_confidence=geometry_confidence,
+            color_ratio=rectangularity,
+            edge_confidence=color_edge_ratio,
+            color_edge_ratio=color_edge_ratio,
+            depth_edge_ratio=None,
+            visible_face_confidence=face_confidence,
+            observed_visible_face_mm=observed_face_mm,
+            rectangularity=rectangularity,
+            camera_distance_m=fixed_depth_m,
+            point_camera_m=(center_x_m, center_y_m, fixed_depth_m),
+            observed_dimensions_mm=observed_dimensions_mm,
+            pixel_area=pixel_area,
+            bounding_box_xyxy=(
+                int(statistics[label, cv2.CC_STAT_LEFT]),
+                int(statistics[label, cv2.CC_STAT_TOP]),
+                int(
+                    statistics[label, cv2.CC_STAT_LEFT]
+                    + statistics[label, cv2.CC_STAT_WIDTH]
+                    - 1
+                ),
+                int(
+                    statistics[label, cv2.CC_STAT_TOP]
+                    + statistics[label, cv2.CC_STAT_HEIGHT]
+                    - 1
+                ),
+            ),
+            detection_mode="color_fixed_depth",
+        )
+        if best is None or candidate.confidence > best.confidence:
+            best = candidate
+    return best
+
+
 def detect_target_from_depth(
     depth_m: np.ndarray,
     intrinsics: CameraIntrinsics,
@@ -692,24 +950,7 @@ def detect_target_from_depth(
         return None
     color_mask: Optional[np.ndarray] = None
     if color_enabled:
-        hsv = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2HSV)
-        hsv_ranges = color_definition.get("hsv_ranges")
-        if hsv_ranges is None:
-            # Backward compatibility for tests and hand-written definitions
-            # that still use one hsv_lower/hsv_upper pair.
-            hsv_ranges = [
-                {
-                    "lower": color_definition["hsv_lower"],
-                    "upper": color_definition["hsv_upper"],
-                }
-            ]
-        color_mask = np.zeros(depth_m.shape, dtype=bool)
-        for hsv_range in hsv_ranges:
-            color_mask |= cv2.inRange(
-                hsv,
-                np.asarray(hsv_range["lower"], dtype=np.uint8),
-                np.asarray(hsv_range["upper"], dtype=np.uint8),
-            ) > 0
+        color_mask = _target_color_mask(color_bgr, color_definition)
     color_edges: Optional[np.ndarray] = None
     depth_edges: Optional[np.ndarray] = None
     if edge_enabled:
