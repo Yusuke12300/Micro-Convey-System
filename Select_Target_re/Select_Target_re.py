@@ -20,6 +20,12 @@ sys.path.append(".")
 import RTC
 import OpenRTM_aist
 
+#tkinterというGUIライブラリをインポート
+import threading
+import tkinter as tk
+import sys
+
+
 
 # Import Service implementation class
 # <rtc-template block="service_impl">
@@ -187,7 +193,27 @@ class Select_Target_re(OpenRTM_aist.DataFlowComponentBase):
     #def onExecute(self, ec_id):
     #
     #    return RTC.RTC_OK
-	
+
+	# ===============================================
+    # 【追加】UIのボタンが押されたときに呼ばれる関数
+    # ===============================================
+    def send_target(self, target_id):
+        # 1つ目のポート (target_out1) に送信
+        self._d_target_out1.data = target_id
+        OpenRTM_aist.setTimestamp(self._d_target_out1)
+        self._target_out1Out.write()
+
+        # 2つ目のポート (target_out2) にも同じデータを送信
+        self._d_target_out2.data = target_id
+        OpenRTM_aist.setTimestamp(self._d_target_out2)
+        self._target_out2Out.write()
+
+        # 3つ目のポート (target_out3) にも同じデータを送信
+        self._d_target_out3.data = target_id
+        OpenRTM_aist.setTimestamp(self._d_target_out3)
+        self._target_out3Out.write()
+
+        print(f"[RTC] 3つのポートから同時に送信しました: {target_id}")
     ###
     ##
     ## The aborting action when main logic error occurred.
@@ -262,6 +288,53 @@ def Select_Target_reInit(manager):
     manager.registerFactory(profile,
                             Select_Target_re,
                             OpenRTM_aist.Delete)
+# ===============================================
+# 【追加】TkinterのUIクラス
+# ===============================================
+class TargetSelectionUI:
+    def __init__(self, rtc_instance):
+        self.rtc = rtc_instance
+        self.root = tk.Tk()
+        self.root.title("ターゲット選択")
+        self.root.geometry("300x300")
+
+        label = tk.Label(self.root, text="ターゲットを選択してください", font=("Arial", 12))
+        label.pack(pady=10)
+
+        # 送信ボタン t1
+        btn_t1 = tk.Button(self.root, text="ターゲット t1 を送信", 
+                           command=lambda: self.on_button_click("t1"))
+        btn_t1.pack(pady=5, fill=tk.X, padx=20)
+
+        # 送信ボタン t2
+        btn_t2 = tk.Button(self.root, text="ターゲット t2 を送信", 
+                           command=lambda: self.on_button_click("t2"))
+        btn_t2.pack(pady=5, fill=tk.X, padx=20)
+
+        # 送信ボタン t3
+        btn_t3 = tk.Button(self.root, text="ターゲット t3 を送信", 
+                           command=lambda: self.on_button_click("t3"))
+        btn_t3.pack(pady=5, fill=tk.X, padx=20)
+           
+        # 送信ボタン t4
+        btn_t4 = tk.Button(self.root, text="ターゲット t4 を送信", 
+                           command=lambda: self.on_button_click("t4"))
+        btn_t4.pack(pady=5, fill=tk.X, padx=20)
+
+        # ウィンドウを閉じたときの処理
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def on_button_click(self, target_id):
+        print(f"[UI] ボタン押下: {target_id}")
+        self.rtc.send_target(target_id)  # 上で作った送信関数を呼ぶ
+
+    def on_closing(self):
+        self.root.destroy()
+        sys.exit() # プログラム全体を終了
+
+    def run(self):
+        self.root.mainloop()
+
 
 def MyModuleInit(manager):
     Select_Target_reInit(manager)
@@ -283,7 +356,19 @@ def main():
     mgr = OpenRTM_aist.Manager.init(sys.argv)
     mgr.setModuleInitProc(MyModuleInit)
     mgr.activateManager()
-    mgr.runManager()
+    #mgr.runManager()
+    # --- ここから書き換え ---
+    
+    # MyModuleInitで生成されたRTCインスタンスを取得する
+    comp = mgr.getComponents()[0]
+
+    # mgr.runManager() を別スレッドで動かす（UIを止めないため）
+    rtc_thread = threading.Thread(target=mgr.runManager, daemon=True)
+    rtc_thread.start()
+
+    # TkinterのUIを起動し、取得したRTCインスタンスを渡す
+    ui = TargetSelectionUI(comp)
+    ui.run()
 
 if __name__ == "__main__":
     main()
