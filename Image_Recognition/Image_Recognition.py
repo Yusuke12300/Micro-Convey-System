@@ -49,6 +49,7 @@ OUTPUT_WRITE_WARNING_INTERVAL_SEC = 1.0
 PREVIEW_WINDOW_NAME = "Image_Recognition - RealSense"
 PREVIEW_OVERLAY_DURATION_SEC = 5.0
 PREVIEW_OUTPUT_STATUS_DURATION_SEC = 5.0
+MYCOBOT_XY_REACH_LIMIT_M = 0.280
 
 
 # Import Service implementation class
@@ -1068,6 +1069,23 @@ class Image_Recognition(OpenRTM_aist.DataFlowComponentBase):
             self._sample_edge_metrics.get(best.captured_at),
             now,
         )
+        if self._output_frame == "arm":
+            xy_distance_m = math.hypot(point_output_m[0], point_output_m[1])
+            if xy_distance_m >= MYCOBOT_XY_REACH_LIMIT_M:
+                self._set_output_status(
+                    "Not sent: outside 280 mm XY reach", (0, 0, 255), now
+                )
+                LOGGER.warning(
+                    "Not sending %s: arm-frame coordinate "
+                    "(X=%+.3f, Y=%+.3f, Z=%+.3f) m has an XY distance of "
+                    "%.1f mm, at or beyond the MyCobot reach limit of %.1f mm",
+                    self._active_target_id,
+                    *point_output_m,
+                    xy_distance_m * 1000.0,
+                    MYCOBOT_XY_REACH_LIMIT_M * 1000.0,
+                )
+                self._finish_request()
+                return
         self._d_Coordinate.data.x = point_output_m[0]
         self._d_Coordinate.data.y = point_output_m[1]
         self._d_Coordinate.data.z = point_output_m[2]

@@ -171,9 +171,11 @@ class Startup_Generation_Before(OpenRTM_aist.DataFlowComponentBase):
     ## @return RTC::ReturnCode_t
     ##
     ##
-    #def onActivated(self, ec_id):
-    #
-    #    return RTC.RTC_OK
+    def onActivated(self, ec_id):
+    # アクティベートされた瞬間に、強制的に状態を初期化する
+        self.state = 0
+        print("【システム起動】状態をリセットして最初からスタートします！")
+        return RTC.RTC_OK
 	
     ###
     ##
