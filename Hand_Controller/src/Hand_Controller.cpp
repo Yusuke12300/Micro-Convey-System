@@ -138,7 +138,7 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
 {
   // ==========================================
   // Active後のハンド初期化
-  // myCobotが使用可能になるまで繰り返し試す
+  // グリッパを開く
   // ==========================================
   if (!hand_initialized)
   {
@@ -149,14 +149,28 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
         << std::endl;
 
       // グリッパを最大まで開く
-      m_JARA_ARM_ManipulatorCommonInterface_Middle
-        ->moveGripper(100);
+      JARA_ARM::RETURN_ID_var gripper_ret =
+        m_JARA_ARM_ManipulatorCommonInterface_Middle
+          ->moveGripper(100);
+
+      // moveGripperの結果を確認
+      if (gripper_ret->id != JARA_ARM::OK)
+      {
+        std::cout
+          << "[Hand_Controller] Initial open failed: "
+          << gripper_ret->comment
+          << std::endl;
+
+        // 初期化未完了のまま
+        // 次のonExecute()で再試行
+        return RTC::RTC_OK;
+      }
 
       std::cout
         << "[Hand_Controller] Initial open done"
         << std::endl;
 
-      // 初期開動作が実行できたら初期化完了
+      // 成功した場合だけ初期化完了
       hand_initialized = true;
     }
     catch (...)
@@ -165,7 +179,7 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
         << "[Hand_Controller] myCobot is not ready. retry..."
         << std::endl;
 
-      // 次回のonExecute()で再試行
+      // 次のonExecute()で再試行
       return RTC::RTC_OK;
     }
   }
@@ -208,11 +222,11 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
       // ========================================
       if (current_target_id == "t1")
       {
-        gripper_value = 67;  // 必要に応じて変更
+        gripper_value = 67;
       }
       else if (current_target_id == "t2")
       {
-        // t2の開度
+        // 後で設定
         // gripper_value = ○○;
       }
       else if (current_target_id == "t3")
@@ -225,49 +239,85 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
       }
 
 
+      // ========================================
+      // 有効な対象物IDの場合
+      // ========================================
       if (gripper_value >= 0)
       {
-        // ======================================
-        // 一度グリッパを開く
-        // ======================================
-        std::cout
-          << "[Hand_Controller] Open gripper: 100"
-          << std::endl;
+        try
+        {
+          // ------------------------------------
+          // 一度グリッパを開く
+          // ------------------------------------
+          std::cout
+            << "[Hand_Controller] Open gripper: 100"
+            << std::endl;
 
-        m_JARA_ARM_ManipulatorCommonInterface_Middle
-          ->moveGripper(100);
+          JARA_ARM::RETURN_ID_var open_ret =
+            m_JARA_ARM_ManipulatorCommonInterface_Middle
+              ->moveGripper(100);
 
+          if (open_ret->id != JARA_ARM::OK)
+          {
+            std::cout
+              << "[Hand_Controller] Open gripper failed: "
+              << open_ret->comment
+              << std::endl;
 
-        // ======================================
-        // 対象物に合わせて閉じる
-        // ======================================
-        std::cout
-          << "[Hand_Controller] target_id = "
-          << current_target_id
-          << std::endl;
-
-        std::cout
-          << "[Hand_Controller] Close gripper: "
-          << gripper_value
-          << std::endl;
-
-        m_JARA_ARM_ManipulatorCommonInterface_Middle
-          ->moveGripper(gripper_value);
+            return RTC::RTC_OK;
+          }
 
 
-        // ======================================
-        // 把持完了通知
-        // ======================================
-        m_hand_end.data = true;
-        m_hand_endOut.write();
+          // ------------------------------------
+          // 対象物に合わせて閉じる
+          // ------------------------------------
+          std::cout
+            << "[Hand_Controller] target_id = "
+            << current_target_id
+            << std::endl;
 
-        std::cout
-          << "[Hand_Controller] GRASP completed"
-          << std::endl;
+          std::cout
+            << "[Hand_Controller] Close gripper: "
+            << gripper_value
+            << std::endl;
 
-        std::cout
-          << "[Hand_Controller] hand_end sent"
-          << std::endl;
+          JARA_ARM::RETURN_ID_var close_ret =
+            m_JARA_ARM_ManipulatorCommonInterface_Middle
+              ->moveGripper(gripper_value);
+
+          if (close_ret->id != JARA_ARM::OK)
+          {
+            std::cout
+              << "[Hand_Controller] Close gripper failed: "
+              << close_ret->comment
+              << std::endl;
+
+            return RTC::RTC_OK;
+          }
+
+
+          // ------------------------------------
+          // 把持完了通知
+          // ------------------------------------
+          m_hand_end.data = true;
+          m_hand_endOut.write();
+
+          std::cout
+            << "[Hand_Controller] GRASP completed"
+            << std::endl;
+
+          std::cout
+            << "[Hand_Controller] hand_end sent"
+            << std::endl;
+        }
+        catch (...)
+        {
+          std::cout
+            << "[Hand_Controller] GRASP error"
+            << std::endl;
+
+          return RTC::RTC_OK;
+        }
       }
       else
       {
@@ -293,31 +343,52 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
         << "[Hand_Controller] RELEASE command received"
         << std::endl;
 
+      try
+      {
+        // --------------------------------------
+        // 最大まで開いて対象物を離す
+        // --------------------------------------
+        std::cout
+          << "[Hand_Controller] Open gripper: 100"
+          << std::endl;
 
-      // ========================================
-      // 最大まで開いて対象物を離す
-      // ========================================
-      std::cout
-        << "[Hand_Controller] Open gripper: 100"
-        << std::endl;
+        JARA_ARM::RETURN_ID_var release_ret =
+          m_JARA_ARM_ManipulatorCommonInterface_Middle
+            ->moveGripper(100);
 
-      m_JARA_ARM_ManipulatorCommonInterface_Middle
-        ->moveGripper(100);
+        if (release_ret->id != JARA_ARM::OK)
+        {
+          std::cout
+            << "[Hand_Controller] RELEASE failed: "
+            << release_ret->comment
+            << std::endl;
+
+          return RTC::RTC_OK;
+        }
 
 
-      // ========================================
-      // 解放完了通知
-      // ========================================
-      m_hand_end.data = true;
-      m_hand_endOut.write();
+        // --------------------------------------
+        // 解放完了通知
+        // --------------------------------------
+        m_hand_end.data = true;
+        m_hand_endOut.write();
 
-      std::cout
-        << "[Hand_Controller] RELEASE completed"
-        << std::endl;
+        std::cout
+          << "[Hand_Controller] RELEASE completed"
+          << std::endl;
 
-      std::cout
-        << "[Hand_Controller] hand_end sent"
-        << std::endl;
+        std::cout
+          << "[Hand_Controller] hand_end sent"
+          << std::endl;
+      }
+      catch (...)
+      {
+        std::cout
+          << "[Hand_Controller] RELEASE error"
+          << std::endl;
+
+        return RTC::RTC_OK;
+      }
     }
   }
 
