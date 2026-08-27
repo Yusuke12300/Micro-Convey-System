@@ -1,0 +1,26 @@
+2026-08-27 19:33:41,763 file.manager INFO 2.0.2
+2026-08-27 19:33:41,763 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-27 19:33:41,763 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-27 19:33:41,763 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-27 19:33:41,764 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-27 19:33:41,764 file.manager INFO   All right reserved.
+2026-08-27 19:33:41,764 file.manager INFO Manager starting.
+2026-08-27 19:33:41,764 file.manager INFO Starting local logging.
+2026-08-27 19:33:41,797 file.manager.namingmanager INFO NameServer connection succeeded: corba/localhost
+2026-08-27 19:33:45,900 file.ManagerServant INFO Master manager not found
+2026-08-27 19:33:45,902 file.LocalServiceAdmin INFO All the local services are enabled.
+2026-08-27 19:33:45,912 file.manager INFO Component type conf file: Select_Target.conf loaded.
+2026-08-27 19:33:45,915 file.ec_base INFO setRate(1000000.000000) done
+2026-08-27 19:33:45,915 file.ec_base INFO setRate(1000.000000) done
+2026-08-27 19:33:45,916 file.rtobject INFO 1 execution context was created.
+2026-08-27 19:33:45,921 file.rtobject INFO Initial active configuration set is default.
+2026-08-27 19:34:00,270 file.ManagerServant INFO Master manager not found
+2026-08-27 19:34:10,260 file.ManagerServant INFO Master manager not found
+2026-08-27 19:34:20,373 file.ManagerServant INFO Master manager not found
+2026-08-27 19:34:30,358 file.ManagerServant INFO Master manager not found
+2026-08-27 19:34:40,457 file.ManagerServant INFO Master manager not found
+2026-08-27 19:34:50,499 file.ManagerServant INFO Master manager not found
+2026-08-27 19:35:00,600 file.ManagerServant INFO Master manager not found
+2026-08-27 19:35:10,598 file.ManagerServant INFO Master manager not found
+2026-08-27 19:35:20,681 file.ManagerServant INFO Master manager not found
+2026-08-27 19:35:30,792 file.ManagerServant INFO Master manager not found

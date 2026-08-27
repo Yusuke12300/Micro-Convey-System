@@ -115,7 +115,11 @@ sys.modules["geometry_recognition"] = geometry
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from Image_Recognition import Image_Recognition, REQUEST_TIMEOUT_SEC  # noqa: E402
+from Image_Recognition import (  # noqa: E402
+    Image_Recognition,
+    MYCOBOT_XY_REACH_LIMIT_M,
+    REQUEST_TIMEOUT_SEC,
+)
 
 # Keep Image_Recognition bound to the lightweight fake helpers above, but do
 # not leak the fake module into geometry_recognition's independent test file.
@@ -211,6 +215,69 @@ class ComponentLogicTests(unittest.TestCase):
         self.assertEqual(outport.write_count, 2)
         self.assertIsNone(self.component._active_target_id)
         self.assertFalse(self.component._output_write_failed)
+
+    def test_arm_coordinate_at_or_beyond_280_mm_xy_reach_is_not_published(self):
+        self.component._output_frame = "arm"
+        self.component._active_target_id = "[T1]"
+        self.component._request_started_at = time.monotonic() - 1.0
+        self.component._min_detection_count[0] = 1
+        self.component._geometry_settings = SimpleNamespace(
+            stable_cluster_radius_m=0.012
+        )
+        self.component._samples.append(
+            DetectionSample(0.95, (0.200, -0.200, 0.105), 1.0)
+        )
+
+        self.component._publish_if_ready(time.monotonic())
+
+        self.assertEqual(MYCOBOT_XY_REACH_LIMIT_M, 0.280)
+        self.assertEqual(self.component._Target_Coordinate_OutOut.write_count, 0)
+        self.assertIsNone(self.component._active_target_id)
+        self.assertEqual(
+            self.component._last_detection_overlay["point_output_m"],
+            (0.2, -0.2, 0.105),
+        )
+        self.assertEqual(self.component._last_output_status["color"], (0, 0, 255))
+        self.assertIn(
+            "Not sent: outside 280 mm XY reach",
+            self.component._last_output_status["text"],
+        )
+
+    def test_arm_coordinate_exactly_at_280_mm_axis_limit_is_not_published(self):
+        self.component._output_frame = "arm"
+        self.component._active_target_id = "[T1]"
+        self.component._request_started_at = time.monotonic() - 1.0
+        self.component._min_detection_count[0] = 1
+        self.component._geometry_settings = SimpleNamespace(
+            stable_cluster_radius_m=0.012
+        )
+        self.component._samples.append(
+            DetectionSample(0.95, (-0.280, 0.0, 0.105), 1.0)
+        )
+
+        self.component._publish_if_ready(time.monotonic())
+
+        self.assertEqual(self.component._Target_Coordinate_OutOut.write_count, 0)
+        self.assertIsNone(self.component._active_target_id)
+        self.assertIn("Not sent", self.component._last_output_status["text"])
+
+    def test_arm_coordinate_inside_280_mm_xy_reach_is_published(self):
+        self.component._output_frame = "arm"
+        self.component._active_target_id = "[T2]"
+        self.component._request_started_at = time.monotonic() - 1.0
+        self.component._min_detection_count[0] = 1
+        self.component._geometry_settings = SimpleNamespace(
+            stable_cluster_radius_m=0.012
+        )
+        self.component._samples.append(
+            DetectionSample(0.95, (0.197, -0.197, 0.105), 1.0)
+        )
+
+        self.component._publish_if_ready(time.monotonic())
+
+        self.assertEqual(self.component._Target_Coordinate_OutOut.write_count, 1)
+        self.assertIsNone(self.component._active_target_id)
+        self.assertIn("Sent to target_point", self.component._last_output_status["text"])
 
     def test_slow_recognition_waits_fifteen_seconds_before_timeout(self):
         self.component._active_target_id = "[T2]"
