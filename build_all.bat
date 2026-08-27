@@ -5,16 +5,22 @@ echo Micro-Convey-System 一括ビルドスクリプト
 echo ==========================================
 
 REM ------------------------------------------------
-REM 【1】自分が作ったコンポーネント（Debug版）
+REM 【1】自分が作ったコンポーネント（Debug版・初期構成込み）
 REM ------------------------------------------------
 echo.
 echo [1/4] Path_Generation をビルドしています (Debug)...
-cd /d "%~dp0Path_Generation\build"
+cd /d "%~dp0Path_Generation"
+if not exist build mkdir build
+cd build
+cmake ..
 cmake --build . --config Debug
 
 echo.
 echo [2/4] Startup_Generation_After をビルドしています (Debug)...
-cd /d "%~dp0Startup_Generation_After\build"
+cd /d "%~dp0Startup_Generation_After"
+if not exist build mkdir build
+cd build
+cmake ..
 cmake --build . --config Debug
 
 
