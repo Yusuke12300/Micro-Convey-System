@@ -211,6 +211,9 @@ def load_geometry_configuration(
                 face_shape = str(
                     visible_face_definition.get("shape", "rectangle")
                 ).strip().lower()
+                measurement = str(
+                    visible_face_definition.get("measurement", "plane")
+                ).strip().lower()
                 min_shape_confidence = float(
                     visible_face_definition.get("min_shape_confidence", 0.50)
                 )
@@ -236,9 +239,15 @@ def load_geometry_configuration(
                     raise ValueError(
                         f"visible_face.confidence_weight for {target_id} must be 0..1"
                     )
-                if face_shape not in {"rectangle", "circle"}:
+                if face_shape not in {"rectangle", "circle", "hexagon"}:
                     raise ValueError(
-                        f"visible_face.shape for {target_id} must be rectangle or circle"
+                        f"visible_face.shape for {target_id} must be rectangle, "
+                        "circle or hexagon"
+                    )
+                if measurement not in {"plane", "silhouette"}:
+                    raise ValueError(
+                        f"visible_face.measurement for {target_id} must be plane "
+                        "or silhouette"
                     )
                 if not 0.0 <= min_shape_confidence <= 1.0:
                     raise ValueError(
@@ -263,6 +272,7 @@ def load_geometry_configuration(
                 visible_face_definition["relative_tolerance"] = relative_tolerance
                 visible_face_definition["confidence_weight"] = confidence_weight
                 visible_face_definition["shape"] = face_shape
+                visible_face_definition["measurement"] = measurement
                 visible_face_definition[
                     "min_shape_confidence"
                 ] = min_shape_confidence
@@ -572,14 +582,17 @@ def visible_face_shape_confidence(
     expected_shape: str,
     rectangularity: float,
 ) -> float:
-    """Score whether a top-view component is rectangular or circular.
+    """Score whether a top-view component is rectangular, circular or hexagonal.
 
     A square and a circle can have the same width, length/diameter, height and
     color. The fraction of the external contour that fills its enclosing circle
     is therefore used with rectangularity to distinguish those otherwise
     identical targets. Using the external contour ignores internal depth holes.
     Ellipse aspect ratio additionally rejects elongated or partially observed
-    circles. A NumPy pixel estimate remains available for lightweight tests.
+    circles. A regular hexagon is identified by its characteristic enclosing-
+    circle fill ratio, rectangularity and (when OpenCV provides the contour
+    API) its approximated vertex count. A NumPy pixel estimate remains
+    available for lightweight tests.
     """
 
     component = np.asarray(component_mask, dtype=bool)
@@ -599,6 +612,7 @@ def visible_face_shape_confidence(
     enclosing_circle_area = np.pi * radius_px**2
     circle_fill_ratio = min(1.0, float(len(pixel_x)) / enclosing_circle_area)
     ellipse_aspect_ratio = 1.0
+    polygon_vertex_count: Optional[int] = None
 
     contour_api_available = all(
         hasattr(cv2, name)
@@ -634,6 +648,12 @@ def visible_face_shape_confidence(
                     minor_axis = min(float(ellipse_axes[0]), float(ellipse_axes[1]))
                     if major_axis > 0.0:
                         ellipse_aspect_ratio = min(1.0, minor_axis / major_axis)
+                if all(hasattr(cv2, name) for name in ("arcLength", "approxPolyDP")):
+                    perimeter = float(cv2.arcLength(contour, True))
+                    if perimeter > 0.0:
+                        polygon_vertex_count = len(
+                            cv2.approxPolyDP(contour, 0.04 * perimeter, True)
+                        )
         except Exception:
             # The pixel estimate above is intentionally retained when a small
             # or damaged contour cannot be fitted reliably.
@@ -656,7 +676,24 @@ def visible_face_shape_confidence(
         return float(
             np.sqrt(np.clip(rectangularity, 0.0, 1.0) * circle_rejection)
         )
-    raise ValueError("expected_shape must be 'rectangle' or 'circle'")
+    if normalized_shape == "hexagon":
+        ideal_circle_fill = 3.0 * np.sqrt(3.0) / (2.0 * np.pi)
+        fill_score = float(
+            np.exp(-0.5 * ((circle_fill_ratio - ideal_circle_fill) / 0.08) ** 2)
+        )
+        rectangularity_score = float(
+            np.exp(-0.5 * ((float(rectangularity) - 0.75) / 0.12) ** 2)
+        )
+        confidence = float(np.sqrt(fill_score * rectangularity_score))
+        if polygon_vertex_count is not None:
+            vertex_score = float(
+                np.exp(-0.5 * ((float(polygon_vertex_count) - 6.0) / 1.5) ** 2)
+            )
+            confidence = float(np.sqrt(confidence * vertex_score))
+        return confidence
+    raise ValueError(
+        "expected_shape must be 'rectangle', 'circle' or 'hexagon'"
+    )
 
 
 def measure_visible_face(
@@ -1169,20 +1206,33 @@ def detect_target_from_depth(
         visible_face_center: Optional[np.ndarray] = None
         confidence = geometry_confidence
         if visible_face_definition is not None:
-            face_measurement = measure_visible_face(
-                points,
-                rng,
-                int(visible_face_definition.get("plane_ransac_iterations", 80)),
-                float(
-                    visible_face_definition.get(
-                        "plane_distance_threshold_m", 0.004
+            measurement = str(
+                visible_face_definition.get("measurement", "plane")
+            ).strip().lower()
+            if measurement == "silhouette":
+                observed_visible_face_mm = tuple(
+                    float(value)
+                    for value in np.sort(
+                        np.asarray([footprint_a, footprint_b]) * 1000.0
                     )
-                ),
-                float(visible_face_definition.get("min_plane_inlier_ratio", 0.30)),
-            )
-            if face_measurement is None:
-                continue
-            observed_visible_face_mm, visible_face_center = face_measurement
+                )
+            else:
+                face_measurement = measure_visible_face(
+                    points,
+                    rng,
+                    int(visible_face_definition.get("plane_ransac_iterations", 80)),
+                    float(
+                        visible_face_definition.get(
+                            "plane_distance_threshold_m", 0.004
+                        )
+                    ),
+                    float(
+                        visible_face_definition.get("min_plane_inlier_ratio", 0.30)
+                    ),
+                )
+                if face_measurement is None:
+                    continue
+                observed_visible_face_mm, visible_face_center = face_measurement
             visible_face_score = visible_face_confidence(
                 observed_visible_face_mm,
                 visible_face_definition["dimensions_mm"],

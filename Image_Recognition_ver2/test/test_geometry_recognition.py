@@ -76,18 +76,34 @@ cv2.minAreaRect = lambda points: (
 def _convert_color_for_test(image, conversion):
     if conversion == cv2.COLOR_BGR2GRAY:
         return np.mean(image, axis=2).astype(np.uint8)
-    value = np.max(image, axis=2).astype(np.uint8)
-    minimum = np.min(image, axis=2).astype(np.float32)
-    saturation = np.zeros_like(value)
-    nonzero = value > 0
-    saturation[nonzero] = np.clip(
-        255.0 * (value[nonzero].astype(np.float32) - minimum[nonzero])
-        / value[nonzero],
-        0,
-        255,
-    ).astype(np.uint8)
-    hue = np.zeros_like(value)
-    return np.dstack((hue, saturation, value))
+    blue, green, red = np.moveaxis(image.astype(np.float32), 2, 0)
+    maximum = np.maximum.reduce((blue, green, red))
+    minimum = np.minimum.reduce((blue, green, red))
+    delta = maximum - minimum
+    hue_degrees = np.zeros_like(maximum)
+    chromatic = delta > 0.0
+    red_max = chromatic & (maximum == red)
+    green_max = chromatic & (maximum == green)
+    blue_max = chromatic & (maximum == blue)
+    hue_degrees[red_max] = np.mod(
+        60.0 * (green[red_max] - blue[red_max]) / delta[red_max], 360.0
+    )
+    hue_degrees[green_max] = 60.0 * (
+        (blue[green_max] - red[green_max]) / delta[green_max] + 2.0
+    )
+    hue_degrees[blue_max] = 60.0 * (
+        (red[blue_max] - green[blue_max]) / delta[blue_max] + 4.0
+    )
+    saturation = np.zeros_like(maximum)
+    nonzero = maximum > 0.0
+    saturation[nonzero] = 255.0 * delta[nonzero] / maximum[nonzero]
+    return np.dstack(
+        (
+            np.clip(hue_degrees / 2.0, 0, 179).astype(np.uint8),
+            np.clip(saturation, 0, 255).astype(np.uint8),
+            maximum.astype(np.uint8),
+        )
+    )
 
 
 def _canny_for_test(image, low_threshold, high_threshold):
@@ -188,8 +204,8 @@ class GeometryRecognitionTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         expected = {
             "[T1]": ("[20.0, 20.0, 10.0]", "[20.0, 20.0]", "rectangle", "0.460"),
-            "[T2]": ("[30.0, 30.0, 15.0]", "[30.0, 30.0]", "rectangle", "0.455"),
-            "[T3]": ("[20.0, 20.0, 10.0]", "[20.0, 20.0]", "circle", "0.460"),
+            "[T2]": ("[25.0, 25.0, 25.0]", "[25.0, 25.0]", "circle", "0.445"),
+            "[T3]": ("[25.0, 25.0, 15.0]", "[25.0, 25.0]", "hexagon", "0.455"),
             "[T4]": ("[30.0, 30.0, 15.0]", "[30.0, 30.0]", "circle", "0.455"),
         }
 
@@ -212,17 +228,29 @@ class GeometryRecognitionTests(unittest.TestCase):
                 self.assertIn(f"dimensions_mm: {face}", definition)
                 self.assertIn(f"shape: {shape}", definition)
                 self.assertIn(f"expected_m: {distance}", definition)
+                if target_id == "[T2]":
+                    self.assertIn("measurement: silhouette", definition)
+                    self.assertIn("hsv_lower: [90, 100, 70]", definition)
+                    self.assertIn("hsv_upper: [135, 255, 255]", definition)
                 if target_id == "[T3]":
-                    self.assertIn("min_shape_confidence: 0.35", definition)
-                    self.assertIn("hsv_upper: [179, 255, 100]", definition)
-                    self.assertIn("min_ratio: 0.40", definition)
-                    self.assertIn("confidence_threshold: 0.55", definition)
+                    self.assertIn("min_shape_confidence: 0.65", definition)
+                    self.assertIn("hsv_lower: [145, 40, 100]", definition)
+                    self.assertIn("hsv_upper: [179, 255, 255]", definition)
+                    self.assertIn("min_ratio: 0.35", definition)
+                    self.assertIn("confidence_threshold: 0.60", definition)
 
-    def test_square_and_circle_faces_are_distinguished(self):
+    def test_square_circle_and_hexagon_faces_are_distinguished(self):
         yy, xx = np.mgrid[0:41, 0:41]
         square = np.zeros((41, 41), dtype=bool)
         square[10:31, 10:31] = True
         circle = (xx - 20) ** 2 + (yy - 20) ** 2 <= 10**2
+        delta_x = np.abs(xx - 20)
+        delta_y = np.abs(yy - 20)
+        hexagon = (
+            (delta_x <= 10)
+            & (delta_y <= np.sqrt(3.0) * 5.0)
+            & (np.sqrt(3.0) * delta_x + delta_y <= np.sqrt(3.0) * 10.0)
+        )
 
         self.assertGreater(
             visible_face_shape_confidence(square, "rectangle", 1.0), 0.50
@@ -235,6 +263,15 @@ class GeometryRecognitionTests(unittest.TestCase):
         )
         self.assertLess(
             visible_face_shape_confidence(circle, "rectangle", 0.85), 0.50
+        )
+        self.assertGreater(
+            visible_face_shape_confidence(hexagon, "hexagon", 0.75), 0.65
+        )
+        self.assertLess(
+            visible_face_shape_confidence(circle, "hexagon", 0.85), 0.65
+        )
+        self.assertLess(
+            visible_face_shape_confidence(square, "hexagon", 1.0), 0.65
         )
 
     def test_external_circle_contour_ignores_internal_depth_holes(self):
@@ -272,6 +309,62 @@ class GeometryRecognitionTests(unittest.TestCase):
             )
 
         self.assertGreater(confidence, 0.35)
+
+    def test_spherical_target_uses_silhouette_instead_of_a_top_plane(self):
+        yy, xx = np.mgrid[0:100, 0:100]
+        radius_px = 8.0
+        radial_squared = (xx - 49.5) ** 2 + (yy - 49.5) ** 2
+        sphere = radial_squared <= radius_px**2
+        normalized_radius = np.clip(radial_squared / radius_px**2, 0.0, 1.0)
+        depth = np.ones((100, 100), dtype=np.float32)
+        depth[sphere] = (
+            0.975 + 0.018 * normalized_radius[sphere]
+        ).astype(np.float32)
+        settings = DetectorSettings(
+            roi_xyxy=(0, 0, 100, 100),
+            plane_sample_stride=2,
+            plane_ransac_iterations=50,
+            plane_distance_threshold_m=0.002,
+            min_plane_inlier_ratio=0.80,
+            object_min_height_m=0.007,
+            object_max_height_m=0.030,
+            min_component_area_px=50,
+            morphology_kernel_px=1,
+            dimension_abs_tolerance_mm=8.0,
+            dimension_relative_tolerance=0.35,
+            min_rectangularity=0.40,
+        )
+        definition = {
+            "enabled": True,
+            "dimensions_mm": [25.0, 25.0, 25.0],
+            "visible_face": {
+                "dimensions_mm": [25.0, 25.0],
+                "shape": "circle",
+                "measurement": "silhouette",
+                "min_shape_confidence": 0.50,
+                "shape_confidence_weight": 0.20,
+                "absolute_tolerance_mm": 8.0,
+                "relative_tolerance": 0.30,
+                "confidence_weight": 0.35,
+            },
+        }
+
+        detection = detect_target_from_depth(
+            depth,
+            CameraIntrinsics(600.0, 600.0, 49.5, 49.5),
+            "[T2]",
+            definition,
+            settings,
+            0.55,
+            np.random.default_rng(21),
+        )
+
+        self.assertIsNotNone(detection)
+        self.assertIsNotNone(detection.observed_visible_face_mm)
+        np.testing.assert_allclose(
+            detection.observed_visible_face_mm, [25.0, 25.0], atol=5.0
+        )
+        self.assertAlmostEqual(detection.point_camera_m[2], 0.975, delta=0.004)
 
     def test_stable_cluster_rejects_high_confidence_moving_outlier(self):
         samples = [
@@ -609,7 +702,7 @@ class GeometryRecognitionTests(unittest.TestCase):
             )
         )
 
-    def test_red_t2_accepts_red_and_rejects_white(self):
+    def test_blue_t2_accepts_blue_and_rejects_white(self):
         depth = np.ones((100, 100), dtype=np.float32)
         depth[36:64, 45:55] = 0.967
         settings = DetectorSettings(
@@ -630,16 +723,14 @@ class GeometryRecognitionTests(unittest.TestCase):
             "dimensions_mm": [15.0, 45.0, 33.0],
             "color": {
                 "enabled": True,
-                "hsv_ranges": [
-                    {"lower": [0, 100, 70], "upper": [12, 255, 255]},
-                    {"lower": [168, 100, 70], "upper": [179, 255, 255]},
-                ],
+                "hsv_lower": [90, 100, 70],
+                "hsv_upper": [135, 255, 255],
                 "min_ratio": 0.35,
                 "confidence_weight": 0.40,
             },
         }
-        red_object = np.zeros((100, 100, 3), dtype=np.uint8)
-        red_object[36:64, 45:55] = [0, 0, 255]
+        blue_object = np.zeros((100, 100, 3), dtype=np.uint8)
+        blue_object[36:64, 45:55] = [255, 0, 0]
         detection = detect_target_from_depth(
             depth,
             CameraIntrinsics(600.0, 600.0, 49.5, 49.5),
@@ -648,7 +739,7 @@ class GeometryRecognitionTests(unittest.TestCase):
             settings,
             0.6,
             np.random.default_rng(8),
-            color_bgr=red_object,
+            color_bgr=blue_object,
         )
         self.assertIsNotNone(detection)
         self.assertGreaterEqual(detection.color_ratio, 0.95)
@@ -668,7 +759,7 @@ class GeometryRecognitionTests(unittest.TestCase):
             )
         )
 
-    def test_color_fixed_depth_fallback_detects_red_with_no_depth(self):
+    def test_color_fixed_depth_fallback_detects_blue_with_no_depth(self):
         settings = DetectorSettings(
             roi_xyxy=(0, 0, 100, 100),
             plane_sample_stride=2,
@@ -698,10 +789,8 @@ class GeometryRecognitionTests(unittest.TestCase):
             },
             "color": {
                 "enabled": True,
-                "hsv_ranges": [
-                    {"lower": [0, 100, 70], "upper": [12, 255, 255]},
-                    {"lower": [168, 100, 70], "upper": [179, 255, 255]},
-                ],
+                "hsv_lower": [90, 100, 70],
+                "hsv_upper": [135, 255, 255],
                 "min_ratio": 0.35,
                 "confidence_weight": 0.40,
             },
@@ -712,7 +801,7 @@ class GeometryRecognitionTests(unittest.TestCase):
             },
         }
         color = np.full((100, 100, 3), 255, dtype=np.uint8)
-        color[28:72, 20:80] = [0, 0, 255]
+        color[28:72, 20:80] = [255, 0, 0]
 
         detection = detect_target_from_color_at_fixed_depth(
             color,
