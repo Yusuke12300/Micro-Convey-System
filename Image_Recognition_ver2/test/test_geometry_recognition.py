@@ -143,8 +143,10 @@ from geometry_recognition import (  # noqa: E402
     edge_support_ratio,
     fit_plane_ransac,
     load_arm_camera_transform,
+    load_geometry_configuration,
     measure_visible_face,
     normalize_target_id,
+    repair_binary_mask,
     select_best_sample,
     select_stable_best_sample,
     visible_face_shape_confidence,
@@ -206,7 +208,7 @@ class GeometryRecognitionTests(unittest.TestCase):
             "[T1]": ("[20.0, 20.0, 10.0]", "[20.0, 20.0]", "rectangle", "0.460"),
             "[T2]": ("[25.0, 25.0, 25.0]", "[25.0, 25.0]", "circle", "0.445"),
             "[T3]": ("[25.0, 25.0, 15.0]", "[25.0, 25.0]", "hexagon", "0.455"),
-            "[T4]": ("[30.0, 30.0, 15.0]", "[30.0, 30.0]", "circle", "0.455"),
+            "[T4]": ("[30.0, 30.0, 15.0]", "[30.0, 30.0]", "rectangle", "0.455"),
         }
 
         self.assertIn("output_frame: arm", configuration)
@@ -233,11 +235,63 @@ class GeometryRecognitionTests(unittest.TestCase):
                     self.assertIn("hsv_lower: [90, 100, 70]", definition)
                     self.assertIn("hsv_upper: [135, 255, 255]", definition)
                 if target_id == "[T3]":
-                    self.assertIn("min_shape_confidence: 0.65", definition)
-                    self.assertIn("hsv_lower: [145, 40, 100]", definition)
-                    self.assertIn("hsv_upper: [179, 255, 255]", definition)
-                    self.assertIn("min_ratio: 0.35", definition)
+                    self.assertIn("reject_shapes: [circle]", definition)
+                    self.assertIn("min_shape_margin: 0.02", definition)
+                    self.assertIn("min_shape_confidence: 0.45", definition)
+                    self.assertIn("hsv_lower: [145, 35, 75]", definition)
+                    self.assertIn("hsv_upper: [169, 255, 255]", definition)
+                    self.assertIn("mask_repair_kernel_px: 7", definition)
+                    self.assertIn("fill_holes: true", definition)
+                    self.assertIn("min_ratio: 0.30", definition)
                     self.assertIn("confidence_threshold: 0.60", definition)
+                if target_id == "[T4]":
+                    self.assertIn("reject_shapes: [circle, hexagon]", definition)
+                    self.assertIn("min_shape_margin: 0.10", definition)
+                    self.assertIn("mask_repair_kernel_px: 5", definition)
+                    self.assertIn("fill_holes: true", definition)
+                    self.assertIn("lower: [173, 110, 80]", definition)
+                    self.assertIn("confidence_threshold: 0.70", definition)
+
+    def test_adaptive_dark_and_mask_repair_configuration_is_normalized(self):
+        document = {
+            "detector": {"roi_xyxy": [0, 0, 100, 100]},
+            "targets": {
+                "[T1]": {
+                    "enabled": True,
+                    "dimensions_mm": [20.0, 20.0, 10.0],
+                    "visible_face": {
+                        "dimensions_mm": [20.0, 20.0],
+                        "shape": "rectangle",
+                    },
+                    "color": {
+                        "enabled": True,
+                        "hsv_lower": [0, 0, 0],
+                        "hsv_upper": [179, 255, 80],
+                        "mask_repair_kernel_px": 7,
+                        "fill_holes": True,
+                        "adaptive_dark": {
+                            "enabled": True,
+                            "reference_percentile": 60,
+                            "min_contrast_v": 12,
+                            "max_v": 115,
+                            "max_saturation": 100,
+                        },
+                    },
+                },
+                "[T2]": {"enabled": False},
+                "[T3]": {"enabled": False},
+                "[T4]": {"enabled": False},
+            },
+        }
+
+        with patch("geometry_recognition._load_yaml", return_value=document):
+            _, targets, _ = load_geometry_configuration(Path("unused.yaml"))
+
+        color = targets["[T1]"]["color"]
+        self.assertEqual(color["mask_repair_kernel_px"], 7)
+        self.assertTrue(color["fill_holes"])
+        self.assertTrue(color["adaptive_dark"]["enabled"])
+        self.assertEqual(color["adaptive_dark"]["max_v"], 115)
 
     def test_square_circle_and_hexagon_faces_are_distinguished(self):
         yy, xx = np.mgrid[0:41, 0:41]
@@ -273,6 +327,64 @@ class GeometryRecognitionTests(unittest.TestCase):
         self.assertLess(
             visible_face_shape_confidence(square, "hexagon", 1.0), 0.65
         )
+        self.assertEqual(
+            visible_face_shape_confidence(
+                hexagon, "circle", 0.75, ["hexagon"], 0.10
+            ),
+            0.0,
+        )
+        self.assertGreater(
+            visible_face_shape_confidence(
+                hexagon, "hexagon", 0.75, ["circle"], 0.10
+            ),
+            0.68,
+        )
+        self.assertEqual(
+            visible_face_shape_confidence(
+                circle, "hexagon", 0.85, ["circle"], 0.10
+            ),
+            0.0,
+        )
+        self.assertGreater(
+            visible_face_shape_confidence(
+                circle, "circle", 0.85, ["hexagon"], 0.10
+            ),
+            0.65,
+        )
+        self.assertGreater(
+            visible_face_shape_confidence(
+                square, "rectangle", 1.0, ["circle", "hexagon"], 0.10
+            ),
+            0.65,
+        )
+        self.assertEqual(
+            visible_face_shape_confidence(
+                circle, "rectangle", 0.85, ["circle", "hexagon"], 0.10
+            ),
+            0.0,
+        )
+        self.assertEqual(
+            visible_face_shape_confidence(
+                hexagon, "rectangle", 0.75, ["circle", "hexagon"], 0.10
+            ),
+            0.0,
+        )
+
+        incomplete_hexagon = hexagon.copy()
+        incomplete_hexagon[0:14, 17:24] = False
+        incomplete_y, incomplete_x = np.nonzero(incomplete_hexagon)
+        incomplete_rectangularity = float(np.count_nonzero(incomplete_hexagon)) / float(
+            np.ptp(incomplete_x) * np.ptp(incomplete_y)
+        )
+        incomplete_score = visible_face_shape_confidence(
+            incomplete_hexagon,
+            "hexagon",
+            incomplete_rectangularity,
+            ["circle"],
+            0.02,
+        )
+        self.assertLess(incomplete_score, 0.55)
+        self.assertGreater(incomplete_score, 0.45)
 
     def test_external_circle_contour_ignores_internal_depth_holes(self):
         yy, xx = np.mgrid[0:41, 0:41]
@@ -853,6 +965,252 @@ class GeometryRecognitionTests(unittest.TestCase):
         )
         self.assertIsNotNone(black_detection)
         self.assertEqual(black_detection.detection_mode, "color_fixed_depth")
+
+    def test_binary_mask_repair_fills_enclosed_depth_or_color_holes(self):
+        damaged = np.zeros((25, 25), dtype=bool)
+        damaged[5:20, 5:20] = True
+        damaged[10:15, 10:15] = False
+
+        repaired = repair_binary_mask(damaged, close_kernel_px=1, fill_holes=True)
+
+        self.assertTrue(np.all(repaired[5:20, 5:20]))
+        self.assertFalse(np.any(repaired[:4, :]))
+
+    def test_t1_adaptive_dark_fallback_repairs_a_bright_internal_hole(self):
+        settings = DetectorSettings(
+            roi_xyxy=(0, 0, 120, 120),
+            plane_sample_stride=2,
+            plane_ransac_iterations=40,
+            plane_distance_threshold_m=0.002,
+            min_plane_inlier_ratio=0.8,
+            object_min_height_m=0.007,
+            object_max_height_m=0.030,
+            min_component_area_px=100,
+            max_component_area_px=5000,
+            morphology_kernel_px=1,
+            dimension_abs_tolerance_mm=8.0,
+            dimension_relative_tolerance=0.35,
+            min_rectangularity=0.45,
+            color_canny_low_threshold=20,
+            color_canny_high_threshold=80,
+        )
+        definition = {
+            "enabled": True,
+            "dimensions_mm": [20.0, 20.0, 10.0],
+            "visible_face": {
+                "dimensions_mm": [20.0, 20.0],
+                "shape": "rectangle",
+                "min_shape_confidence": 0.40,
+                "shape_confidence_weight": 0.20,
+                "absolute_tolerance_mm": 8.0,
+                "relative_tolerance": 0.30,
+                "confidence_weight": 0.35,
+            },
+            "color": {
+                "enabled": True,
+                "hsv_lower": [0, 0, 0],
+                "hsv_upper": [179, 255, 80],
+                "adaptive_dark": {
+                    "enabled": True,
+                    "reference_percentile": 60.0,
+                    "min_contrast_v": 12.0,
+                    "max_v": 115,
+                    "max_saturation": 100,
+                },
+                "mask_repair_kernel_px": 1,
+                "fill_holes": True,
+                "min_ratio": 0.25,
+                "confidence_weight": 0.25,
+            },
+            "color_fixed_depth_fallback": {
+                "enabled": True,
+                "camera_distance_m": 0.460,
+                "confidence_threshold": 0.55,
+            },
+        }
+        gray_ground = np.full((120, 120, 3), 120, dtype=np.uint8)
+        damaged_black_square = gray_ground.copy()
+        damaged_black_square[47:74, 47:74] = 95
+        damaged_black_square[55:66, 55:66] = 120
+        intrinsics = CameraIntrinsics(600.0, 600.0, 59.5, 59.5)
+
+        detection = detect_target_from_color_at_fixed_depth(
+            damaged_black_square,
+            intrinsics,
+            "[T1]",
+            definition,
+            settings,
+            0.55,
+        )
+
+        self.assertIsNotNone(detection)
+        self.assertEqual(detection.detection_mode, "color_fixed_depth")
+        self.assertIsNone(
+            detect_target_from_color_at_fixed_depth(
+                gray_ground,
+                intrinsics,
+                "[T1]",
+                definition,
+                settings,
+                0.55,
+            )
+        )
+
+    def test_t4_red_square_is_distinguished_from_other_target_appearances(self):
+        settings = DetectorSettings(
+            roi_xyxy=(0, 0, 120, 120),
+            plane_sample_stride=2,
+            plane_ransac_iterations=40,
+            plane_distance_threshold_m=0.002,
+            min_plane_inlier_ratio=0.8,
+            object_min_height_m=0.007,
+            object_max_height_m=0.030,
+            min_component_area_px=100,
+            max_component_area_px=5000,
+            morphology_kernel_px=1,
+            dimension_abs_tolerance_mm=8.0,
+            dimension_relative_tolerance=0.35,
+            min_rectangularity=0.45,
+        )
+        common_face = {
+            "shape_confidence_weight": 0.25,
+            "absolute_tolerance_mm": 4.0,
+            "relative_tolerance": 0.15,
+            "confidence_weight": 0.35,
+        }
+        t3_definition = {
+            "enabled": True,
+            "dimensions_mm": [25.0, 25.0, 15.0],
+            "visible_face": {
+                **common_face,
+                "dimensions_mm": [25.0, 25.0],
+                "shape": "hexagon",
+                "reject_shapes": ["circle"],
+                "min_shape_margin": 0.02,
+                "min_shape_confidence": 0.45,
+            },
+            "color": {
+                "enabled": True,
+                "hsv_lower": [150, 45, 90],
+                "hsv_upper": [169, 255, 255],
+                "mask_repair_kernel_px": 1,
+                "fill_holes": True,
+                "min_ratio": 0.45,
+                "confidence_weight": 0.45,
+            },
+            "color_fixed_depth_fallback": {
+                "enabled": True,
+                "camera_distance_m": 0.455,
+                "confidence_threshold": 0.70,
+            },
+        }
+        t4_definition = {
+            "enabled": True,
+            "dimensions_mm": [30.0, 30.0, 15.0],
+            "visible_face": {
+                **common_face,
+                "dimensions_mm": [30.0, 30.0],
+                "shape": "rectangle",
+                "reject_shapes": ["circle", "hexagon"],
+                "min_shape_margin": 0.10,
+                "min_shape_confidence": 0.65,
+            },
+            "color": {
+                "enabled": True,
+                "hsv_ranges": [
+                    {"lower": [0, 110, 80], "upper": [10, 255, 255]},
+                    {"lower": [173, 110, 80], "upper": [179, 255, 255]},
+                ],
+                "mask_repair_kernel_px": 5,
+                "fill_holes": True,
+                "min_ratio": 0.45,
+                "confidence_weight": 0.45,
+            },
+            "color_fixed_depth_fallback": {
+                "enabled": True,
+                "camera_distance_m": 0.455,
+                "confidence_threshold": 0.70,
+            },
+        }
+
+        yy, xx = np.mgrid[0:120, 0:120]
+        delta_x = np.abs(xx - 60)
+        delta_y = np.abs(yy - 60)
+        hexagon = (
+            (delta_x <= 19)
+            & (delta_y <= np.sqrt(3.0) * 9.5)
+            & (np.sqrt(3.0) * delta_x + delta_y <= np.sqrt(3.0) * 19.0)
+        )
+        circle = (xx - 60) ** 2 + (yy - 60) ** 2 <= 20**2
+        white_sheet = np.full((120, 120, 3), 245, dtype=np.uint8)
+        black_square = white_sheet.copy()
+        black_square[47:74, 47:74] = [40, 40, 40]
+        blue_circle = white_sheet.copy()
+        blue_circle[circle] = [255, 20, 20]
+        pink_hexagon = white_sheet.copy()
+        pink_hexagon[hexagon] = [180, 80, 255]
+        pink_hexagon[56:65, 56:65] = 245
+        red_square = white_sheet.copy()
+        red_square[40:80, 40:80] = [20, 20, 255]
+        # Simulate a white specular hole in the red top; mask repair should
+        # restore it before the 30 x 30 mm square is measured.
+        red_square[55:65, 55:65] = 245
+        red_circle = white_sheet.copy()
+        red_circle[circle] = [20, 20, 255]
+        intrinsics = CameraIntrinsics(600.0, 600.0, 59.5, 59.5)
+
+        self.assertIsNotNone(
+            detect_target_from_color_at_fixed_depth(
+                pink_hexagon,
+                intrinsics,
+                "[T3]",
+                t3_definition,
+                settings,
+                0.60,
+            )
+        )
+        self.assertIsNotNone(
+            detect_target_from_color_at_fixed_depth(
+                red_square,
+                intrinsics,
+                "[T4]",
+                t4_definition,
+                settings,
+                0.60,
+            )
+        )
+        for other_target_image in (black_square, blue_circle, pink_hexagon):
+            with self.subTest(image_id=id(other_target_image)):
+                self.assertIsNone(
+                    detect_target_from_color_at_fixed_depth(
+                        other_target_image,
+                        intrinsics,
+                        "[T4]",
+                        t4_definition,
+                        settings,
+                        0.60,
+                    )
+                )
+        self.assertIsNone(
+            detect_target_from_color_at_fixed_depth(
+                red_circle,
+                intrinsics,
+                "[T4]",
+                t4_definition,
+                settings,
+                0.60,
+            )
+        )
+        self.assertIsNone(
+            detect_target_from_color_at_fixed_depth(
+                red_square,
+                intrinsics,
+                "[T3]",
+                t3_definition,
+                settings,
+                0.60,
+            )
+        )
 
     def test_depth_edge_support_follows_component_boundary(self):
         depth = np.ones((20, 20), dtype=np.float32)

@@ -2,18 +2,19 @@
 # Publish target_point in the MyCobot base coordinate system.
 output_frame: arm
 
-# Depth-geometry detector settings. The ROI is the white work sheet shown in
-# the 640 x 480 RealSense color image. Adjust it if the camera is moved.
+# Depth-geometry detector settings. The ROI covers the plain white work sheet
+# shown by the 640 x 480 RealSense image. Its color is excluded by the target
+# HSV masks; RANSAC estimates its dominant depth plane before raised components
+# are evaluated. Adjust the ROI whenever the camera or sheet is moved.
 detector:
   roi_xyxy: [80, 25, 510, 330]
   plane_sample_stride: 3
   plane_ransac_iterations: 150
   plane_distance_threshold_m: 0.006
-  # The white sheet occupies most of the ROI but the targets and shadows are
-  # excluded from the work-surface plane fit.
+  # The white sheet occupies most of the ROI but targets, shadows and small
+  # depth irregularities are excluded from the work-surface plane fit.
   min_plane_inlier_ratio: 0.35
-  # The configured targets are 10, 15 or 25 mm above the fixed white work
-  # surface.
+  # The configured targets are 10, 15 or 25 mm above the estimated sheet.
   # The tolerance admits depth noise but rejects the sheet itself and the
   # taller MyCobot/conveyor parts.
   object_min_height_m: 0.007
@@ -30,17 +31,19 @@ detector:
   # robot link or a one-frame reflection is therefore not published.
   stable_cluster_radius_m: 0.020
   # Candidate boundaries must be supported by both color and depth edges.
-  color_canny_low_threshold: 60
-  color_canny_high_threshold: 180
+  # A low threshold is needed for a black target whose brightness is close to
+  # the gray ground. Shape, size and depth still reject ground texture.
+  color_canny_low_threshold: 25
+  color_canny_high_threshold: 100
   depth_edge_threshold_m: 0.012
   edge_search_radius_px: 3
   min_color_edge_ratio: 0.04
   min_depth_edge_ratio: 0.04
   edge_confidence_weight: 0.10
 
-# Cuboid dimensions_mm order is [width, length, height]. Cylinder dimensions
-# are [diameter, diameter, height], a sphere is [diameter, diameter, diameter],
-# and a regular hexagonal prism is [across-flats, across-flats, height].
+# Cuboid dimensions_mm order is [width, length, height]. A sphere is
+# [diameter, diameter, diameter], and a regular hexagonal prism is
+# [across-flats, across-flats, height].
 # Matching is orientation-free.
 targets:
   "[T1]":
@@ -50,7 +53,7 @@ targets:
     visible_face:
       dimensions_mm: [20.0, 20.0]
       shape: rectangle
-      min_shape_confidence: 0.50
+      min_shape_confidence: 0.40
       shape_confidence_weight: 0.20
       absolute_tolerance_mm: 8.0
       relative_tolerance: 0.30
@@ -73,14 +76,25 @@ targets:
       enabled: true
       hsv_lower: [0, 0, 0]
       hsv_upper: [179, 255, 80]
-      min_ratio: 0.45
+      # The camera image shows the black top around V=89..110 while the ground
+      # is around V=110..126. Add pixels that are darker than the current ROI
+      # reference instead of raising the absolute black limit for the ground.
+      adaptive_dark:
+        enabled: true
+        reference_percentile: 60
+        min_contrast_v: 12
+        max_v: 115
+        max_saturation: 100
+      mask_repair_kernel_px: 7
+      fill_holes: true
+      min_ratio: 0.25
       confidence_weight: 0.25
     # The D435 may return no depth on the glossy/low-texture target. In that
     # case, measure the 20 x 20 mm color square and use the known top depth.
     color_fixed_depth_fallback:
       enabled: true
       camera_distance_m: 0.460
-      confidence_threshold: 0.60
+      confidence_threshold: 0.55
 
   "[T2]":
     enabled: true
@@ -124,10 +138,16 @@ targets:
       # The value is the distance between each pair of opposite edges.
       dimensions_mm: [25.0, 25.0]
       shape: hexagon
-      min_shape_confidence: 0.65
+      # A hexagon is also fairly circular, so it must beat the circle score.
+      reject_shapes: [circle]
+      # Accept moderately incomplete corners across consecutive frames while
+      # still requiring the hexagon score to beat the circle score.
+      min_shape_margin: 0.02
+      min_shape_confidence: 0.45
       shape_confidence_weight: 0.20
-      absolute_tolerance_mm: 8.0
-      relative_tolerance: 0.30
+      # Keep the 25 mm T3 face separate from the 30 mm T4 face.
+      absolute_tolerance_mm: 5.0
+      relative_tolerance: 0.20
       confidence_weight: 0.35
       plane_ransac_iterations: 100
       plane_distance_threshold_m: 0.004
@@ -138,11 +158,14 @@ targets:
       confidence_weight: 0.10
     color:
       enabled: true
-      # Pink can be relatively low in saturation under bright illumination.
-      hsv_lower: [145, 40, 100]
-      hsv_upper: [179, 255, 255]
-      min_ratio: 0.35
-      confidence_weight: 0.40
+      # The supplied camera image places pink near H=164. Keep this range
+      # disjoint from T4 red (H=0/177) so the targets cannot share a color mask.
+      hsv_lower: [145, 35, 75]
+      hsv_upper: [169, 255, 255]
+      mask_repair_kernel_px: 7
+      fill_holes: true
+      min_ratio: 0.30
+      confidence_weight: 0.45
     color_fixed_depth_fallback:
       enabled: true
       camera_distance_m: 0.455
@@ -151,14 +174,20 @@ targets:
   "[T4]":
     enabled: true
     dimensions_mm: [30.0, 30.0, 15.0]
-    description: red cylinder 30 mm in diameter and 15 mm high, detected from its circular face
+    description: red 30 x 30 x 15 mm cuboid detected from its 30 x 30 mm face
     visible_face:
       dimensions_mm: [30.0, 30.0]
-      shape: circle
-      min_shape_confidence: 0.50
-      shape_confidence_weight: 0.20
-      absolute_tolerance_mm: 8.0
-      relative_tolerance: 0.30
+      shape: rectangle
+      # Require the square top to beat both round alternatives. Together with
+      # the 30 x 30 mm dimensions, this separates T4 from T2 and T3, while its
+      # disjoint red HSV range separates it from the smaller black square T1.
+      reject_shapes: [circle, hexagon]
+      min_shape_margin: 0.10
+      min_shape_confidence: 0.65
+      shape_confidence_weight: 0.25
+      # Keep the 30 mm T4 face separate from the 25 mm T3 face.
+      absolute_tolerance_mm: 4.0
+      relative_tolerance: 0.15
       confidence_weight: 0.35
       plane_ransac_iterations: 100
       plane_distance_threshold_m: 0.004
@@ -170,13 +199,17 @@ targets:
     color:
       enabled: true
       hsv_ranges:
-        - lower: [0, 100, 70]
-          upper: [12, 255, 255]
-        - lower: [168, 100, 70]
+        - lower: [0, 110, 80]
+          upper: [10, 255, 255]
+        - lower: [173, 110, 80]
           upper: [179, 255, 255]
-      min_ratio: 0.35
-      confidence_weight: 0.40
+      # Repair small glare holes before measuring the square silhouette. The
+      # white sheet remains outside this high-saturation red mask.
+      mask_repair_kernel_px: 5
+      fill_holes: true
+      min_ratio: 0.45
+      confidence_weight: 0.45
     color_fixed_depth_fallback:
       enabled: true
       camera_distance_m: 0.455
-      confidence_threshold: 0.60
+      confidence_threshold: 0.70

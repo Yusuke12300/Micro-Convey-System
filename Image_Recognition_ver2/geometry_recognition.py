@@ -211,6 +211,19 @@ def load_geometry_configuration(
                 face_shape = str(
                     visible_face_definition.get("shape", "rectangle")
                 ).strip().lower()
+                raw_reject_shapes = visible_face_definition.get("reject_shapes", [])
+                if isinstance(raw_reject_shapes, str):
+                    raw_reject_shapes = [raw_reject_shapes]
+                if not isinstance(raw_reject_shapes, list):
+                    raise ValueError(
+                        f"visible_face.reject_shapes for {target_id} must be a list"
+                    )
+                reject_shapes = [
+                    str(value).strip().lower() for value in raw_reject_shapes
+                ]
+                min_shape_margin = float(
+                    visible_face_definition.get("min_shape_margin", 0.0)
+                )
                 measurement = str(
                     visible_face_definition.get("measurement", "plane")
                 ).strip().lower()
@@ -244,6 +257,18 @@ def load_geometry_configuration(
                         f"visible_face.shape for {target_id} must be rectangle, "
                         "circle or hexagon"
                     )
+                invalid_reject_shapes = set(reject_shapes).difference(
+                    {"rectangle", "circle", "hexagon"}
+                )
+                if invalid_reject_shapes or face_shape in reject_shapes:
+                    raise ValueError(
+                        f"visible_face.reject_shapes for {target_id} must contain "
+                        "other valid shapes"
+                    )
+                if not 0.0 <= min_shape_margin <= 1.0:
+                    raise ValueError(
+                        f"visible_face.min_shape_margin for {target_id} must be 0..1"
+                    )
                 if measurement not in {"plane", "silhouette"}:
                     raise ValueError(
                         f"visible_face.measurement for {target_id} must be plane "
@@ -272,6 +297,8 @@ def load_geometry_configuration(
                 visible_face_definition["relative_tolerance"] = relative_tolerance
                 visible_face_definition["confidence_weight"] = confidence_weight
                 visible_face_definition["shape"] = face_shape
+                visible_face_definition["reject_shapes"] = reject_shapes
+                visible_face_definition["min_shape_margin"] = min_shape_margin
                 visible_face_definition["measurement"] = measurement
                 visible_face_definition[
                     "min_shape_confidence"
@@ -364,15 +391,75 @@ def load_geometry_configuration(
                 confidence_weight = float(
                     color_definition.get("confidence_weight", 0.35)
                 )
+                mask_repair_kernel_px = int(
+                    color_definition.get("mask_repair_kernel_px", 3)
+                )
+                fill_holes = color_definition.get("fill_holes", False) is True
+                adaptive_dark_definition = color_definition.get(
+                    "adaptive_dark", {"enabled": False}
+                )
+                if not isinstance(adaptive_dark_definition, dict):
+                    raise ValueError(
+                        f"color.adaptive_dark for {target_id} must be a mapping"
+                    )
+                adaptive_dark_definition = dict(adaptive_dark_definition)
+                adaptive_dark_enabled = (
+                    adaptive_dark_definition.get("enabled", False) is True
+                )
+                adaptive_dark_definition["enabled"] = adaptive_dark_enabled
+                if adaptive_dark_enabled:
+                    reference_percentile = float(
+                        adaptive_dark_definition.get("reference_percentile", 60.0)
+                    )
+                    min_contrast_v = float(
+                        adaptive_dark_definition.get("min_contrast_v", 12.0)
+                    )
+                    max_v = int(adaptive_dark_definition.get("max_v", 115))
+                    max_saturation = int(
+                        adaptive_dark_definition.get("max_saturation", 100)
+                    )
+                    if not 0.0 <= reference_percentile <= 100.0:
+                        raise ValueError(
+                            f"color.adaptive_dark.reference_percentile for "
+                            f"{target_id} must be 0..100"
+                        )
+                    if not 0.0 <= min_contrast_v <= 255.0:
+                        raise ValueError(
+                            f"color.adaptive_dark.min_contrast_v for {target_id} "
+                            "must be 0..255"
+                        )
+                    if not 0 <= max_v <= 255 or not 0 <= max_saturation <= 255:
+                        raise ValueError(
+                            f"color.adaptive_dark limits for {target_id} must be "
+                            "0..255"
+                        )
+                    adaptive_dark_definition[
+                        "reference_percentile"
+                    ] = reference_percentile
+                    adaptive_dark_definition["min_contrast_v"] = min_contrast_v
+                    adaptive_dark_definition["max_v"] = max_v
+                    adaptive_dark_definition["max_saturation"] = max_saturation
                 if not 0.0 <= min_ratio <= 1.0:
                     raise ValueError(f"color.min_ratio for {target_id} must be 0..1")
                 if not 0.0 <= confidence_weight <= 1.0:
                     raise ValueError(
                         f"color.confidence_weight for {target_id} must be 0..1"
                     )
+                if (
+                    mask_repair_kernel_px <= 0
+                    or mask_repair_kernel_px % 2 == 0
+                    or mask_repair_kernel_px > 31
+                ):
+                    raise ValueError(
+                        f"color.mask_repair_kernel_px for {target_id} must be an "
+                        "odd value from 1 to 31"
+                    )
                 color_definition["hsv_ranges"] = normalized_ranges
                 color_definition["min_ratio"] = min_ratio
                 color_definition["confidence_weight"] = confidence_weight
+                color_definition["mask_repair_kernel_px"] = mask_repair_kernel_px
+                color_definition["fill_holes"] = fill_holes
+                color_definition["adaptive_dark"] = adaptive_dark_definition
             definition["color"] = color_definition
             fallback_definition = definition.get(
                 "color_fixed_depth_fallback", {"enabled": False}
@@ -581,6 +668,8 @@ def visible_face_shape_confidence(
     component_mask: np.ndarray,
     expected_shape: str,
     rectangularity: float,
+    reject_shapes: Iterable[str] = (),
+    min_shape_margin: float = 0.0,
 ) -> float:
     """Score whether a top-view component is rectangular, circular or hexagonal.
 
@@ -591,8 +680,10 @@ def visible_face_shape_confidence(
     Ellipse aspect ratio additionally rejects elongated or partially observed
     circles. A regular hexagon is identified by its characteristic enclosing-
     circle fill ratio, rectangularity and (when OpenCV provides the contour
-    API) its approximated vertex count. A NumPy pixel estimate remains
-    available for lightweight tests.
+    API) its approximated vertex count. ``reject_shapes`` additionally requires
+    the expected score to exceed every listed competing shape by
+    ``min_shape_margin``. This matters because a regular hexagon is also fairly
+    circular. A NumPy pixel estimate remains available for lightweight tests.
     """
 
     component = np.asarray(component_mask, dtype=bool)
@@ -635,6 +726,10 @@ def visible_face_shape_confidence(
             contours = contour_result[-2]
             if contours:
                 contour = max(contours, key=cv2.contourArea)
+                if hasattr(cv2, "convexHull"):
+                    # Restore concave notches caused by missing depth/color
+                    # pixels before evaluating the outer target silhouette.
+                    contour = cv2.convexHull(contour)
                 contour_area = float(cv2.contourArea(contour))
                 _, contour_radius_px = cv2.minEnclosingCircle(contour)
                 contour_circle_area = np.pi * float(contour_radius_px) ** 2
@@ -659,41 +754,64 @@ def visible_face_shape_confidence(
             # or damaged contour cannot be fitted reliably.
             pass
 
-    normalized_shape = str(expected_shape).strip().lower()
-    if normalized_shape == "circle":
-        # A filled disk is normally above 0.90; a filled square is near 0.64.
-        fill_score = float(
-            np.clip((circle_fill_ratio - 0.68) / 0.20, 0.0, 1.0)
-        )
-        aspect_score = float(
-            np.clip((ellipse_aspect_ratio - 0.65) / 0.25, 0.0, 1.0)
-        )
-        return float(np.sqrt(fill_score * aspect_score))
-    if normalized_shape == "rectangle":
-        circle_rejection = float(
-            np.clip((0.82 - circle_fill_ratio) / 0.18, 0.0, 1.0)
-        )
-        return float(
-            np.sqrt(np.clip(rectangularity, 0.0, 1.0) * circle_rejection)
-        )
-    if normalized_shape == "hexagon":
-        ideal_circle_fill = 3.0 * np.sqrt(3.0) / (2.0 * np.pi)
-        fill_score = float(
-            np.exp(-0.5 * ((circle_fill_ratio - ideal_circle_fill) / 0.08) ** 2)
-        )
-        rectangularity_score = float(
-            np.exp(-0.5 * ((float(rectangularity) - 0.75) / 0.12) ** 2)
-        )
-        confidence = float(np.sqrt(fill_score * rectangularity_score))
-        if polygon_vertex_count is not None:
-            vertex_score = float(
-                np.exp(-0.5 * ((float(polygon_vertex_count) - 6.0) / 1.5) ** 2)
-            )
-            confidence = float(np.sqrt(confidence * vertex_score))
-        return confidence
-    raise ValueError(
-        "expected_shape must be 'rectangle', 'circle' or 'hexagon'"
+    # A filled disk is normally above 0.90; a filled square is near 0.64.
+    circle_fill_score = float(
+        np.clip((circle_fill_ratio - 0.68) / 0.20, 0.0, 1.0)
     )
+    circle_aspect_score = float(
+        np.clip((ellipse_aspect_ratio - 0.65) / 0.25, 0.0, 1.0)
+    )
+    circle_confidence = float(
+        np.sqrt(circle_fill_score * circle_aspect_score)
+    )
+
+    circle_rejection = float(
+        np.clip((0.82 - circle_fill_ratio) / 0.18, 0.0, 1.0)
+    )
+    rectangle_confidence = float(
+        np.sqrt(np.clip(rectangularity, 0.0, 1.0) * circle_rejection)
+    )
+
+    ideal_circle_fill = 3.0 * np.sqrt(3.0) / (2.0 * np.pi)
+    hexagon_fill_score = float(
+        np.exp(-0.5 * ((circle_fill_ratio - ideal_circle_fill) / 0.08) ** 2)
+    )
+    hexagon_rectangularity_score = float(
+        np.exp(-0.5 * ((float(rectangularity) - 0.75) / 0.12) ** 2)
+    )
+    hexagon_confidence = float(
+        np.sqrt(hexagon_fill_score * hexagon_rectangularity_score)
+    )
+    if polygon_vertex_count is not None:
+        vertex_score = float(
+            np.exp(-0.5 * ((float(polygon_vertex_count) - 6.0) / 1.5) ** 2)
+        )
+        hexagon_confidence = float(np.sqrt(hexagon_confidence * vertex_score))
+
+    shape_scores = {
+        "rectangle": rectangle_confidence,
+        "circle": circle_confidence,
+        "hexagon": hexagon_confidence,
+    }
+    normalized_shape = str(expected_shape).strip().lower()
+    if normalized_shape not in shape_scores:
+        raise ValueError(
+            "expected_shape must be 'rectangle', 'circle' or 'hexagon'"
+        )
+    normalized_reject_shapes = [
+        str(value).strip().lower() for value in reject_shapes
+    ]
+    if any(value not in shape_scores for value in normalized_reject_shapes):
+        raise ValueError(
+            "reject_shapes must contain rectangle, circle or hexagon"
+        )
+    expected_confidence = shape_scores[normalized_shape]
+    if any(
+        expected_confidence < shape_scores[rejected] + float(min_shape_margin)
+        for rejected in normalized_reject_shapes
+    ):
+        return 0.0
+    return expected_confidence
 
 
 def measure_visible_face(
@@ -813,9 +931,11 @@ def edge_support_ratio(
 
 
 def _target_color_mask(
-    color_bgr: np.ndarray, color_definition: Mapping[str, Any]
+    color_bgr: np.ndarray,
+    color_definition: Mapping[str, Any],
+    analysis_mask: Optional[np.ndarray] = None,
 ) -> np.ndarray:
-    """Build one HSV target mask from either normalized or legacy ranges."""
+    """Build an HSV mask, optionally adding locally adaptive dark pixels."""
 
     hsv = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2HSV)
     hsv_ranges = color_definition.get("hsv_ranges")
@@ -833,7 +953,92 @@ def _target_color_mask(
             np.asarray(hsv_range["lower"], dtype=np.uint8),
             np.asarray(hsv_range["upper"], dtype=np.uint8),
         ) > 0
+    adaptive_dark = color_definition.get("adaptive_dark", {})
+    if adaptive_dark.get("enabled") is True:
+        if analysis_mask is None:
+            reference_region = np.ones(color_bgr.shape[:2], dtype=bool)
+        else:
+            reference_region = np.asarray(analysis_mask, dtype=bool)
+            if reference_region.shape != color_bgr.shape[:2]:
+                raise ValueError("analysis_mask must match the color image size")
+        reference_values = hsv[:, :, 2][reference_region]
+        if reference_values.size:
+            reference_v = float(
+                np.percentile(
+                    reference_values,
+                    float(adaptive_dark.get("reference_percentile", 60.0)),
+                )
+            )
+            adaptive_max_v = min(
+                float(adaptive_dark.get("max_v", 115)),
+                reference_v - float(adaptive_dark.get("min_contrast_v", 12.0)),
+            )
+            if adaptive_max_v >= 0.0:
+                color_mask |= (
+                    (hsv[:, :, 2].astype(np.float32) <= adaptive_max_v)
+                    & (
+                        hsv[:, :, 1]
+                        <= int(adaptive_dark.get("max_saturation", 100))
+                    )
+                )
     return color_mask
+
+
+def repair_binary_mask(
+    mask: np.ndarray, close_kernel_px: int = 3, fill_holes: bool = False
+) -> np.ndarray:
+    """Close small breaks and optionally fill enclosed missing pixels."""
+
+    repaired = np.asarray(mask, dtype=bool)
+    if repaired.ndim != 2:
+        raise ValueError("mask must be two-dimensional")
+    if close_kernel_px <= 0 or close_kernel_px % 2 == 0:
+        raise ValueError("close_kernel_px must be a positive odd value")
+    if close_kernel_px > 1:
+        kernel = np.ones((close_kernel_px, close_kernel_px), dtype=np.uint8)
+        repaired = cv2.morphologyEx(
+            repaired.astype(np.uint8), cv2.MORPH_CLOSE, kernel
+        ) > 0
+    else:
+        repaired = repaired.copy()
+    if not fill_holes or not np.any(repaired):
+        return repaired
+
+    inverse = (~repaired).astype(np.uint8)
+    component_count, labels, _, _ = cv2.connectedComponentsWithStats(
+        inverse, connectivity=8
+    )
+    if component_count <= 1:
+        return repaired
+    border_labels = np.unique(
+        np.concatenate(
+            (labels[0, :], labels[-1, :], labels[:, 0], labels[:, -1])
+        )
+    )
+    enclosed = (labels > 0) & ~np.isin(labels, border_labels)
+    return repaired | enclosed
+
+
+def color_edge_mask(
+    color_bgr: np.ndarray, low_threshold: int, high_threshold: int
+) -> np.ndarray:
+    """Return brightness-or-saturation edges for neutral or textured ground.
+
+    Red and pink can have nearly the same grayscale brightness as a gray floor,
+    even though their saturation differs greatly. Combining the two edge maps
+    preserves black/white boundaries while also exposing chromatic object
+    boundaries on neutral ground.
+    """
+
+    gray = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0.0)
+    hsv = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2HSV)
+    saturation = cv2.GaussianBlur(hsv[:, :, 1], (5, 5), 0.0)
+    gray_edges = cv2.Canny(gray, low_threshold, high_threshold) > 0
+    saturation_edges = (
+        cv2.Canny(saturation, low_threshold, high_threshold) > 0
+    )
+    return gray_edges | saturation_edges
 
 
 def detect_target_from_color_at_fixed_depth(
@@ -860,31 +1065,26 @@ def detect_target_from_color_at_fixed_depth(
 
     height, width = color_bgr.shape[:2]
     x1, y1, x2, y2 = _clamp_roi(settings.roi_xyxy, width, height)
-    color_mask = _target_color_mask(color_bgr, color_definition)
     roi_mask = np.zeros((height, width), dtype=bool)
     roi_mask[y1:y2, x1:x2] = True
+    color_mask = _target_color_mask(
+        color_bgr, color_definition, analysis_mask=roi_mask
+    )
     color_mask &= roi_mask
-    kernel = np.ones(
-        (settings.morphology_kernel_px, settings.morphology_kernel_px),
-        dtype=np.uint8,
-    )
-    component_mask = cv2.morphologyEx(
-        color_mask.astype(np.uint8), cv2.MORPH_OPEN, kernel
-    )
-    component_mask = cv2.morphologyEx(
-        component_mask, cv2.MORPH_CLOSE, kernel
+    component_mask = repair_binary_mask(
+        color_mask,
+        int(color_definition.get("mask_repair_kernel_px", 3)),
+        color_definition.get("fill_holes", False) is True,
     )
     component_count, labels, statistics, _ = cv2.connectedComponentsWithStats(
-        component_mask, connectivity=8
+        component_mask.astype(np.uint8), connectivity=8
     )
 
-    gray = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (5, 5), 0.0)
-    color_edges = cv2.Canny(
-        gray,
+    color_edges = color_edge_mask(
+        color_bgr,
         settings.color_canny_low_threshold,
         settings.color_canny_high_threshold,
-    ) > 0
+    )
     fixed_depth_m = float(fallback["camera_distance_m"])
     expected_face_mm = visible_face_definition["dimensions_mm"]
     required_confidence = max(
@@ -916,7 +1116,11 @@ def detect_target_from_color_at_fixed_depth(
         expected_face_shape = visible_face_definition.get("shape")
         if expected_face_shape is not None:
             shape_confidence = visible_face_shape_confidence(
-                component, str(expected_face_shape), rectangularity
+                component,
+                str(expected_face_shape),
+                rectangularity,
+                visible_face_definition.get("reject_shapes", []),
+                float(visible_face_definition.get("min_shape_margin", 0.0)),
             )
             if shape_confidence < float(
                 visible_face_definition.get("min_shape_confidence", 0.50)
@@ -1100,8 +1304,12 @@ def detect_target_from_depth(
     ).astype(np.uint8)
     kernel_size = settings.morphology_kernel_px
     kernel = np.ones((kernel_size, kernel_size), dtype=np.uint8)
+    # Join nearby depth fragments and fill enclosed RealSense holes before
+    # removing isolated speckles. Opening first would erase small T1/T3 faces.
+    object_mask = repair_binary_mask(
+        object_mask > 0, kernel_size, fill_holes=True
+    ).astype(np.uint8)
     object_mask = cv2.morphologyEx(object_mask, cv2.MORPH_OPEN, kernel)
-    object_mask = cv2.morphologyEx(object_mask, cv2.MORPH_CLOSE, kernel)
 
     component_count, labels, statistics, _ = cv2.connectedComponentsWithStats(
         object_mask, connectivity=8
@@ -1122,19 +1330,27 @@ def detect_target_from_depth(
         return None
     color_mask: Optional[np.ndarray] = None
     if color_enabled:
-        color_mask = _target_color_mask(color_bgr, color_definition)
+        roi_analysis_mask = np.zeros(depth_m.shape, dtype=bool)
+        roi_analysis_mask[y1:y2, x1:x2] = True
+        color_mask = _target_color_mask(
+            color_bgr, color_definition, analysis_mask=roi_analysis_mask
+        )
+        color_mask &= roi_analysis_mask
+        color_mask = repair_binary_mask(
+            color_mask,
+            int(color_definition.get("mask_repair_kernel_px", 3)),
+            color_definition.get("fill_holes", False) is True,
+        )
     color_edges: Optional[np.ndarray] = None
     depth_edges: Optional[np.ndarray] = None
     if edge_enabled:
-        gray = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2GRAY)
-        # Suppress sensor and resampling speckles before Canny.  Edges are
-        # used only for scoring and are never drawn into the preview image.
-        gray = cv2.GaussianBlur(gray, (5, 5), 0.0)
-        color_edges = cv2.Canny(
-            gray,
+        # Brightness and saturation are both used so red/pink boundaries stay
+        # visible on a neutral ground with similar grayscale brightness.
+        color_edges = color_edge_mask(
+            color_bgr,
             settings.color_canny_low_threshold,
             settings.color_canny_high_threshold,
-        ) > 0
+        )
         depth_edges = depth_edge_mask(depth_m, settings.depth_edge_threshold_m)
     best: Optional[GeometryDetection] = None
 
@@ -1147,15 +1363,29 @@ def detect_target_from_depth(
             continue
         component = labels == label
         pixel_y, pixel_x = np.nonzero(component)
+        shape_component = component
+        if color_mask is not None:
+            repair_radius = max(
+                1, int(color_definition.get("mask_repair_kernel_px", 3)) // 2
+            )
+            appearance_candidate = color_mask & _dilate_boolean(
+                component, repair_radius
+            )
+            if np.count_nonzero(appearance_candidate) >= 3:
+                shape_component = appearance_candidate
+        shape_pixel_y, shape_pixel_x = np.nonzero(shape_component)
         image_rectangle = cv2.minAreaRect(
-            np.column_stack((pixel_x, pixel_y)).astype(np.float32)
+            np.column_stack((shape_pixel_x, shape_pixel_y)).astype(np.float32)
         )
         image_rectangle_area = float(
             image_rectangle[1][0] * image_rectangle[1][1]
         )
         if image_rectangle_area <= 0.0:
             continue
-        rectangularity = min(1.0, float(pixel_area) / image_rectangle_area)
+        shape_pixel_area = int(np.count_nonzero(shape_component))
+        rectangularity = min(
+            1.0, float(shape_pixel_area) / image_rectangle_area
+        )
         if rectangularity < settings.min_rectangularity:
             continue
         shape_confidence: Optional[float] = None
@@ -1165,9 +1395,11 @@ def detect_target_from_depth(
             and visible_face_definition.get("shape") is not None
         ):
             shape_confidence = visible_face_shape_confidence(
-                component,
+                shape_component,
                 str(visible_face_definition["shape"]),
                 rectangularity,
+                visible_face_definition.get("reject_shapes", []),
+                float(visible_face_definition.get("min_shape_margin", 0.0)),
             )
             if shape_confidence < float(
                 visible_face_definition.get("min_shape_confidence", 0.50)
@@ -1271,7 +1503,7 @@ def detect_target_from_depth(
         depth_edge_ratio: Optional[float] = None
         if edge_enabled:
             color_edge_ratio = edge_support_ratio(
-                component, color_edges, settings.edge_search_radius_px
+                shape_component, color_edges, settings.edge_search_radius_px
             )
             depth_edge_ratio = edge_support_ratio(
                 component, depth_edges, settings.edge_search_radius_px

@@ -1,0 +1,34 @@
+2026-08-28 14:46:40,480 file.manager INFO 2.1.0
+2026-08-28 14:46:40,480 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-28 14:46:40,480 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-28 14:46:40,481 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-28 14:46:40,481 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-28 14:46:40,481 file.manager INFO   All right reserved.
+2026-08-28 14:46:40,481 file.manager INFO Manager starting.
+2026-08-28 14:46:40,481 file.manager INFO Starting local logging.
+2026-08-28 14:46:40,504 file.manager.namingmanager INFO NameServer connection succeeded: corba/localhost
+2026-08-28 14:46:40,515 file.LocalServiceAdmin INFO All the local services are enabled.
+2026-08-28 14:46:40,524 file.manager INFO Component type conf file: Startup_Generation_Before.conf loaded.
+2026-08-28 14:46:40,526 file.ec_base INFO setRate(1000000.000000) done
+2026-08-28 14:46:40,526 file.ec_base INFO setRate(1000.000000) done
+2026-08-28 14:46:40,527 file.rtobject INFO 1 execution context was created.
+2026-08-28 14:46:40,535 file.rtobject INFO Initial active configuration set is default.
+2026-08-28 14:49:33,525 file.target_point WARNING Traceback (most recent call last):
+  File "C:\Users\hirok_7uv7t0u\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\OpenRTM_aist\PortBase.py", line 2305, in checkPorts
+    if port._non_existent():
+       ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\hirok_7uv7t0u\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\omniORB\CORBA.py", line 560, in _non_existent
+    return self._obj.nonExistent()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+omniORB.CORBA._omni_sys_exc: CORBA.COMM_FAILURE(omniORB.COMM_FAILURE_WaitingForReply, CORBA.COMPLETED_MAYBE)
+
+2026-08-28 14:49:33,526 file.target_point WARNING Dead connection: f249af08-a2a3-11f1-8c6f-f0d415709eef
+2026-08-28 14:49:35,626 file.target_point WARNING Traceback (most recent call last):
+  File "C:\Users\hirok_7uv7t0u\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\OpenRTM_aist\PortBase.py", line 873, in disconnect
+    return p.notify_disconnect(connector_id)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\hirok_7uv7t0u\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\OpenRTM_aist\RTM_IDL\RTC_idl.py", line 1207, in notify_disconnect
+    return self._obj.invoke("notify_disconnect", _0_RTC.PortService._d_notify_disconnect, args)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+omniORB.CORBA._omni_sys_exc: CORBA.TRANSIENT(omniORB.TRANSIENT_ConnectFailed, CORBA.COMPLETED_NO)
+
