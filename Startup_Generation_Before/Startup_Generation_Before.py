@@ -204,7 +204,7 @@ class Startup_Generation_Before(OpenRTM_aist.DataFlowComponentBase):
         match self.state:
             
             # ==========================================
-            # 状態0：画像データ受信待ち ＆ 初期固定値へ移動
+            # 状態0：画像データ受信待ち ＆ アプローチ点へ移動
             # ==========================================
             case 0:
                 if self._target_pointIn.isNew(): # TimedPoint3Dを受信
@@ -213,13 +213,13 @@ class Startup_Generation_Before(OpenRTM_aist.DataFlowComponentBase):
                     # 座標を保存
                     self.target_x = data.data.x
                     self.target_y = data.data.y
-                    self.target_z = 0.085 #ターゲットの高さは一定
-                    print(f"ターゲット受信: 目標X={self.target_x}, Y={self.target_y}, Z={self.target_z}")
+                    self.target_z = data.data.z + 0.07 # Zにアームの先端からハンドの高さを足す
+                    print(f"ターゲット受信: X={self.target_x}, Y={self.target_y}, Z={self.target_z}")
 
-                    # --- 型変換 ＆ 送信（最初の固定値へ移動） ---
-                    self._d_target_pose.data.position.x = 0.2
-                    self._d_target_pose.data.position.y = 0.0
-                    self._d_target_pose.data.position.z = 0.2
+                    # --- 型変換 ＆ 送信（アプローチ点） ---
+                    self._d_target_pose.data.position.x = self.target_x
+                    self._d_target_pose.data.position.y = self.target_y
+                    self._d_target_pose.data.position.z = self.target_z + 0.05 # Zに安全な高さを足す
                     
                     # 姿勢はすべて0（アーム制御RTC側で自動的に真下を向くため）
                     self._d_target_pose.data.orientation.r = 0.0
@@ -229,33 +229,14 @@ class Startup_Generation_Before(OpenRTM_aist.DataFlowComponentBase):
                     OpenRTM_aist.setTimestamp(self._d_target_pose)
                     self._target_poseOut.write() # アーム制御RTCへTimedPose3Dを送信
                     
-                    print("状態1: 初期固定値(0.2, 0.0, 0.2)へ移動を開始します")
+                    print("状態1: アプローチ点へ移動を開始します")
                     self.state = 1  # 状態1へ切り替え
             
             # ==========================================
-            # 状態1：初期固定値への完了通知待ち ＆ アプローチ点へ移動
+            # 状態1：アプローチ点への完了通知待ち ＆ ターゲットへ下降
             # ==========================================
             case 1:
                 if self._endcmd_from_Arm_ControllerIn.isNew(): # TimedBooleanを受信
-                    complete_signal = self._endcmd_from_Arm_ControllerIn.read()
-                    
-                    if complete_signal.data == True:
-                        # --- 送信（アプローチ点へ移動） ---
-                        self._d_target_pose.data.position.x = self.target_x
-                        self._d_target_pose.data.position.y = self.target_y
-                        self._d_target_pose.data.position.z = self.target_z + 0.05 # Zに安全な高さを足す
-                        
-                        OpenRTM_aist.setTimestamp(self._d_target_pose)
-                        self._target_poseOut.write() 
-                        
-                        print("状態2: アプローチ点への移動を開始します")
-                        self.state = 2  # 状態2へ切り替え
-
-            # ==========================================
-            # 状態2：アプローチ点への完了通知待ち ＆ ターゲットへ下降
-            # ==========================================
-            case 2:
-                if self._endcmd_from_Arm_ControllerIn.isNew():
                     complete_signal = self._endcmd_from_Arm_ControllerIn.read()
                     
                     if complete_signal.data == True:
@@ -267,13 +248,13 @@ class Startup_Generation_Before(OpenRTM_aist.DataFlowComponentBase):
                         OpenRTM_aist.setTimestamp(self._d_target_pose)
                         self._target_poseOut.write() 
                         
-                        print("状態3: ターゲットへの下降を開始します")
-                        self.state = 3  # 状態3へ切り替え
+                        print("状態2: ターゲットへの下降を開始します")
+                        self.state = 2  # 状態2へ切り替え
             
             # ==========================================
-            # 状態3：下降の完了通知待ち ＆ 台車用RTCへ完了通知
+            # 状態2：下降の完了通知待ち ＆ 台車用RTCへ完了通知
             # ==========================================
-            case 3:
+            case 2:
                 if self._endcmd_from_Arm_ControllerIn.isNew():
                     complete_signal = self._endcmd_from_Arm_ControllerIn.read()
                     
