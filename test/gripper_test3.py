@@ -1,7 +1,7 @@
 from pymycobot import MyCobot280
 import time
 
-PORT = "/dev/ttyACM0"
+PORT = "/dev/ttyUSB0"
 BAUDRATE = 115200
 
 SPEED = 80
