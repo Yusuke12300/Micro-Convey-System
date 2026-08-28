@@ -32,6 +32,8 @@
 #include <rtm/DataInPort.h>
 #include <rtm/DataOutPort.h>
 
+#include<chrono>
+
 
 // <rtc-template block="component_description">
 /*!
@@ -308,6 +310,9 @@ class Path_Generation
   
   // </rtc-template>
 	 int m_step;
+	 std::chrono::system_clock::time_point m_start_time; // 開始時刻を記録する変数
+	 int target_position_x;
+	 int target_position_y;
 
 };
 
