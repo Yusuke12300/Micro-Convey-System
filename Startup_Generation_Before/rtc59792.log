@@ -1,0 +1,9 @@
+2026-08-27 23:25:15,257 file.manager INFO 2.0.2
+2026-08-27 23:25:15,257 file.manager INFO Copyright (C) 2003-2024, Noriaki Ando and OpenRTM development team,
+2026-08-27 23:25:15,257 file.manager INFO   Intelligent Systems Research Institute, AIST,
+2026-08-27 23:25:15,257 file.manager INFO Copyright (C) 2024, Noriaki Ando and OpenRTM development team,
+2026-08-27 23:25:15,257 file.manager INFO   Industrial Cyber-Physical Research Center, AIST,
+2026-08-27 23:25:15,257 file.manager INFO   All right reserved.
+2026-08-27 23:25:15,257 file.manager INFO Manager starting.
+2026-08-27 23:25:15,257 file.manager INFO Starting local logging.
+2026-08-27 23:25:19,343 file.manager.namingmanager INFO NameServer connection failed: corba/localhost
