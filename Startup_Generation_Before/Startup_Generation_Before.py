@@ -217,7 +217,7 @@ class Startup_Generation_Before(OpenRTM_aist.DataFlowComponentBase):
                     print(f"ターゲット受信: 目標X={self.target_x}, Y={self.target_y}, Z={self.target_z}")
 
                     # --- 型変換 ＆ 送信（最初の固定値へ移動） ---
-                    self._d_target_pose.data.position.x = -0.2
+                    self._d_target_pose.data.position.x = 0.2
                     self._d_target_pose.data.position.y = 0.0
                     self._d_target_pose.data.position.z = 0.2
                     
