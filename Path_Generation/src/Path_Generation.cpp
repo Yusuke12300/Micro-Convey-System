@@ -110,7 +110,7 @@ RTC::ReturnCode_t Path_Generation::onActivated(RTC::UniqueId /*ec_id*/)
     m_step = 0;
     std::cout << "Activeになりました" << std::endl;
 
-    target_position_x = 1.9;
+    target_position_x = 1.0;
     target_position_y = -0.7;
 
     return RTC::RTC_OK;
