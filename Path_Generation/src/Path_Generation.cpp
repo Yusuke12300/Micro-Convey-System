@@ -5,7 +5,7 @@
  * @brief Serve serve, reserve bumper
  *
  */
-// </rtc-template>
+ // </rtc-template>
 
 #include "Path_Generation.h"
 #include<iostream>
@@ -18,20 +18,20 @@ static const char* const path_generation_spec[] =
 #else
 static const char* path_generation_spec[] =
 #endif
-  {
-    "implementation_id", "Path_Generation",
-    "type_name",         "Path_Generation",
-    "description",       "Serve serve, reserve bumper",
-    "version",           "1.0.0",
-    "vendor",            "YusukeIto",
-    "category",          "Robot",
-    "activity_type",     "PERIODIC",
-    "kind",              "DataFlowComponent",
-    "max_instance",      "1",
-    "language",          "C++",
-    "lang_type",         "compile",
-    ""
-  };
+{
+  "implementation_id", "Path_Generation",
+  "type_name",         "Path_Generation",
+  "description",       "Serve serve, reserve bumper",
+  "version",           "1.0.0",
+  "vendor",            "YusukeIto",
+  "category",          "Robot",
+  "activity_type",     "PERIODIC",
+  "kind",              "DataFlowComponent",
+  "max_instance",      "1",
+  "language",          "C++",
+  "lang_type",         "compile",
+  ""
+};
 // </rtc-template>
 
 /*!
@@ -39,8 +39,8 @@ static const char* path_generation_spec[] =
  * @param manager Maneger Object
  */
 Path_Generation::Path_Generation(RTC::Manager* manager)
-    // <rtc-template block="initializer">
-  : RTC::DataFlowComponentBase(manager),
+// <rtc-template block="initializer">
+    : RTC::DataFlowComponentBase(manager),
     m_bumperIn("bumper", m_bumper),
     m_completeIn("complete", m_complete),
     m_targetVelocityOut("targetVelocity", m_targetVelocity),
@@ -60,36 +60,36 @@ Path_Generation::~Path_Generation()
 
 RTC::ReturnCode_t Path_Generation::onInitialize()
 {
-  // Registration: InPort/OutPort/Service
-  // <rtc-template block="registration">
-  // Set InPort buffers
-  addInPort("bumper", m_bumperIn);
-  addInPort("complete", m_completeIn);
-  addInPort("currentPose", m_currentPoseIn);
-  
-  // Set OutPort buffer
-  addOutPort("targetVelocity", m_targetVelocityOut);
+    // Registration: InPort/OutPort/Service
+    // <rtc-template block="registration">
+    // Set InPort buffers
+    addInPort("bumper", m_bumperIn);
+    addInPort("complete", m_completeIn);
+    addInPort("currentPose", m_currentPoseIn);
 
-  
-  // Set service provider to Ports
-  
-  // Set service consumers to Ports
-  
-  // Set CORBA Service Ports
-  
-  // </rtc-template>
+    // Set OutPort buffer
+    addOutPort("targetVelocity", m_targetVelocityOut);
 
-  // <rtc-template block="bind_config">
-  // </rtc-template>
 
-  
-  return RTC::RTC_OK;
+    // Set service provider to Ports
+
+    // Set service consumers to Ports
+
+    // Set CORBA Service Ports
+
+    // </rtc-template>
+
+    // <rtc-template block="bind_config">
+    // </rtc-template>
+
+
+    return RTC::RTC_OK;
 }
 
 
 RTC::ReturnCode_t Path_Generation::onFinalize()
 {
-  return RTC::RTC_OK;
+    return RTC::RTC_OK;
 }
 
 
@@ -113,19 +113,19 @@ RTC::ReturnCode_t Path_Generation::onActivated(RTC::UniqueId /*ec_id*/)
     target_position_x = 1.9;
     target_position_y = -0.7;
 
-  return RTC::RTC_OK;
+    return RTC::RTC_OK;
 }
 
 
 RTC::ReturnCode_t Path_Generation::onDeactivated(RTC::UniqueId /*ec_id*/)
 {
-  return RTC::RTC_OK;
+    return RTC::RTC_OK;
 }
 
 
 RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
 {
-    
+
 
     switch (m_step) {
     case 0:
@@ -138,7 +138,7 @@ RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
             }
         }
         break;
-        
+
     case 1:
         while (m_currentPoseIn.isNew()) {
             m_currentPoseIn.read();
@@ -148,7 +148,7 @@ RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
         std::cout << m_currentPose.data.position.x << "," << m_currentPose.data.position.y << std::endl;
 
         //目標y座標へ移動
-        if (m_currentPose.data.position.x <= 1.9) {
+        if (m_currentPose.data.position.x <= target_position_x) {
             m_targetVelocity.data.vx = 0.2;
             m_targetVelocity.data.vy = 0.0;
             m_targetVelocity.data.va = 0.0;
@@ -166,7 +166,7 @@ RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
         else {
             m_step = 9;
             m_start_time = std::chrono::system_clock::now();
-          
+
         }
         m_targetVelocityOut.write();
 
@@ -177,13 +177,19 @@ RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
             m_currentPoseIn.read();
         }
 
-        // 読み終わった最新のデータだけを画面に出す
         std::cout << m_currentPose.data.position.x << "," << m_currentPose.data.position.y << std::endl;
 
+        // 【追加】Yがプラスかマイナスかで、進み続ける条件を自動判定する
+        bool is_moving_to_y;
+        if (target_position_y >= 0.0) {
+            is_moving_to_y = (m_currentPose.data.position.y <= target_position_y); // プラス方向へ進む場合
+        }
+        else {
+            is_moving_to_y = (m_currentPose.data.position.y >= target_position_y); // マイナス方向へ進む場合
+        }
 
-       
-        //目標のx座標へ移動
-        if (m_currentPose.data.position.y >= -0.7) {
+        // 目標のy座標へ移動
+        if (is_moving_to_y) {
             m_targetVelocity.data.vx = 0.2;
             m_targetVelocity.data.vy = 0.0;
             m_targetVelocity.data.va = 0.0;
@@ -192,8 +198,6 @@ RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
                 m_bumperIn.read();
                 if (m_bumper.data[0] == true || m_bumper.data[1] == true || m_bumper.data[2] == true) {
                     m_step = 3;
-
-                    // 回避開始の時間を記録
                     m_start_time = std::chrono::system_clock::now();
                 }
             }
@@ -267,14 +271,20 @@ RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
         break;
 
     case 9:
-        //回転
+        // 回転
         m_targetVelocity.data.vx = 0.0;
         m_targetVelocity.data.vy = 0.0;
-        m_targetVelocity.data.va = -0.4; 
+
+        // 【追加】目標Y座標がプラスなら左回転、マイナスなら右回転
+        if (target_position_y >= 0.0) {
+            m_targetVelocity.data.va = 0.4;
+        }
+        else {
+            m_targetVelocity.data.va = -0.4;
+        }
         m_targetVelocityOut.write();
 
-
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_start_time).count() > 3500) {
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_start_time).count() > 3900) {
             m_step = 2;
         }
         break;
@@ -319,13 +329,13 @@ RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
 
 extern "C"
 {
- 
-  void Path_GenerationInit(RTC::Manager* manager)
-  {
-    coil::Properties profile(path_generation_spec);
-    manager->registerFactory(profile,
-                             RTC::Create<Path_Generation>,
-                             RTC::Delete<Path_Generation>);
-  }
-  
+
+    void Path_GenerationInit(RTC::Manager* manager)
+    {
+        coil::Properties profile(path_generation_spec);
+        manager->registerFactory(profile,
+            RTC::Create<Path_Generation>,
+            RTC::Delete<Path_Generation>);
+    }
+
 }
