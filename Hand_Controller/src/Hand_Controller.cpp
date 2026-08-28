@@ -226,11 +226,11 @@ RTC::ReturnCode_t Hand_Controller::onExecute(RTC::UniqueId /*ec_id*/)
       }
       else if (current_target_id == "t2")
       {
-        gripper_value = 57;
+        gripper_value = 45;
       }
       else if (current_target_id == "t3")
       {
-        gripper_value = 35;
+        gripper_value = 45;
       }
       else if (current_target_id == "t4")
       {
