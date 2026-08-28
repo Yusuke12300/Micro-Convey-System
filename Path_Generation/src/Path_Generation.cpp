@@ -107,7 +107,7 @@ RTC::ReturnCode_t Path_Generation::onFinalize()
 
 RTC::ReturnCode_t Path_Generation::onActivated(RTC::UniqueId /*ec_id*/)
 {
-    m_step = 1;
+    m_step = 0;
     std::cout << "Activeになりました" << std::endl;
 
     target_position_x = 1.9;
@@ -284,7 +284,7 @@ RTC::ReturnCode_t Path_Generation::onExecute(RTC::UniqueId /*ec_id*/)
         }
         m_targetVelocityOut.write();
 
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_start_time).count() > 3900) {
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_start_time).count() > 3800) {
             m_step = 2;
         }
         break;
